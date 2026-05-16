@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Warp-like Terminal Profiles</title>
+    <link rel="stylesheet" href="/vendor/@xterm/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="Profiles and groups">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">W</div>
+          <div>
+            <h1>Warp Profiles</h1>
+            <p>Launch command sets instantly.</p>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <button id="newProfileButton" class="primary-button" type="button">
+            <span aria-hidden="true">+</span>
+            New profile
+          </button>
+          <nav id="profileList" class="profile-list" aria-label="Saved profiles"></nav>
+        </div>
+
+        <div class="sidebar-section">
+          <button id="newGroupButton" class="ghost-button sidebar-action" type="button">
+            <span aria-hidden="true">+</span>
+            New group
+          </button>
+          <nav id="groupList" class="profile-list" aria-label="Profile groups"></nav>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p id="activeEditorType" class="eyebrow">Profile</p>
+            <h2 id="activeProfileName">Loading...</h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="saveProfileButton" class="ghost-button" type="button">Save</button>
+            <button id="launchProfileButton" class="run-button" type="button">
+              <span aria-hidden="true">▶</span>
+              Launch
+            </button>
+          </div>
+        </header>
+
+        <div class="editor-terminal-layout">
+          <section id="profileEditor" class="profile-editor" aria-label="Profile editor">
+            <div id="profileFields" class="editor-fields">
+              <label>
+                Profile name
+                <input id="profileNameInput" autocomplete="off" />
+              </label>
+
+              <label>
+                Working directory
+                <input id="cwdInput" placeholder="/home/you/project" autocomplete="off" />
+              </label>
+
+              <div class="switch-row">
+                <div>
+                  <strong>Stop on first error</strong>
+                  <span>Keep later commands from running if one fails.</span>
+                </div>
+                <label class="switch">
+                  <input id="stopOnErrorInput" type="checkbox" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="commands-header">
+                <div>
+                  <h3>Commands</h3>
+                  <p>They run from top to bottom when this profile launches.</p>
+                </div>
+                <button id="addCommandButton" class="icon-button" type="button" aria-label="Add command">+</button>
+              </div>
+
+              <div id="commandList" class="command-list"></div>
+            </div>
+
+            <div id="groupFields" class="editor-fields" style="display:none">
+              <label>
+                Group name
+                <input id="groupNameInput" autocomplete="off" />
+              </label>
+
+              <div class="commands-header">
+                <div>
+                  <h3>Profiles in this group</h3>
+                  <p>Each profile opens in its own tab when the group launches.</p>
+                </div>
+              </div>
+
+              <div id="groupMemberList" class="group-member-list"></div>
+
+              <div id="groupAddRow" class="group-add-row"></div>
+            </div>
+
+            <div class="editor-actions">
+              <button id="duplicateProfileButton" class="ghost-button" type="button">Duplicate</button>
+              <button id="deleteProfileButton" class="danger-button" type="button">Delete</button>
+              <button id="deleteGroupButton" class="danger-button" type="button" hidden>Delete group</button>
+            </div>
+          </section>
+
+          <section class="terminal-panel" aria-label="Terminal output">
+            <div class="terminal-tabs-bar">
+              <div id="terminalTabs" class="terminal-tabs" role="tablist" aria-label="Terminal tabs"></div>
+              <button id="newTerminalTabButton" class="icon-button compact-icon" type="button" aria-label="New terminal tab">+</button>
+            </div>
+            <div class="terminal-toolbar">
+              <div class="window-controls" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <p id="terminalStatus">Ready</p>
+              <button id="cancelSessionButton" class="ghost-button compact" type="button" disabled>Cancel</button>
+              <button id="restartShellButton" class="ghost-button compact" type="button">Restart shell</button>
+              <button id="clearTerminalButton" class="ghost-button compact" type="button">Clear</button>
+            </div>
+            <div id="terminalOutput" class="terminal-output" aria-label="Terminal"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

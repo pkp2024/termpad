@@ -1,0 +1,48 @@
+{
+  "name": "warp-like-terminal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A local Warp-like profile launcher for predefined terminal command sets.",
+  "type": "module",
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "node server.js",
+    "desktop": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "dist": "electron-builder",
+    "dist:dir": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.warplike.terminal",
+    "productName": "Warp Profiles",
+    "files": [
+      "desktop/**/*",
+      "public/**/*",
+      "server.js"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**/*"
+    ],
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "devDependencies": {
+    "electron": "^30.5.1",
+    "electron-builder": "^26.8.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "node-pty": "^1.1.0"
+  }
+}
