@@ -27,7 +27,7 @@
     },
     "mac": {
       "target": "dmg"
-    },
+    }
   },
   "devDependencies": {
     "electron": "^30.5.1",
