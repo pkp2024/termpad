@@ -1,0 +1,83 @@
+# Warp Profiles
+
+A lightweight desktop terminal launcher inspired by [Warp](https://www.warp.dev/). Define named profiles — each a list of shell commands with a working directory — and launch them with one click. All commands run in a real PTY inside a built-in xterm terminal.
+
+---
+
+## How it works
+
+**Profiles** are saved collections of shell commands that run top-to-bottom in a single shell session. Because commands share a process, things like `cd`, `export`, and `source` carry across commands naturally.
+
+**Groups** let you bundle multiple profiles together so they all launch at once, each in its own terminal tab.
+
+**The terminal panel** is a full xterm.js terminal wired to a real PTY — you get color, cursor movement, and interactive programs (vim, htop, etc.) just as you would in a normal terminal.
+
+### Under the hood
+
+```
+Electron window
+  └─ Embedded HTTP server (server.js)
+       ├─ Serves the UI (public/)
+       └─ REST + SSE API
+            ├─ POST /api/sessions   → spawns a pty running your commands
+            ├─ GET  /api/sessions/:id/events  → streams output line-by-line
+            ├─ POST /api/shells     → opens a persistent interactive shell
+            └─ POST /api/shells/:id/input     → sends keystrokes to the shell
+```
+
+Profiles are stored in your OS user-data directory (`~/.config/Warp Profiles/profiles.json` on Linux) so they survive updates.
+
+---
+
+## Install (Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pkp2024/warp-like/main/install.sh | bash
+```
+
+The script:
+- Downloads the latest AppImage from GitHub Releases
+- Installs it to `~/.local/bin/`
+- Creates a `.desktop` entry so it appears in your app launcher automatically
+
+After install, open it from your app menu by searching **Warp Profiles**, or run it from the terminal:
+
+```bash
+warp-profiles
+```
+
+> **Note:** If `~/.local/bin` is not on your `PATH`, add this to `~/.bashrc` or `~/.zshrc`:
+> ```bash
+> export PATH="$HOME/.local/bin:$PATH"
+> ```
+
+---
+
+## Build from source
+
+**Prerequisites:** Node.js 18+, npm
+
+```bash
+git clone https://github.com/pkp2024/warp-like.git
+cd warp-like
+npm install
+
+# Run in Electron
+npm run desktop
+
+# Build an AppImage
+npm run dist
+```
+
+The AppImage is output to `dist/`.
+
+---
+
+## Usage
+
+1. Click **New profile** in the sidebar
+2. Give it a name and an optional working directory
+3. Add your commands (one per line, run top-to-bottom)
+4. Toggle **Stop on first error** if you want the run to abort on a non-zero exit
+5. Click **Launch** — output streams into the terminal panel on the right
+6. Use **New group** to bundle profiles and launch them all at once in separate tabs
