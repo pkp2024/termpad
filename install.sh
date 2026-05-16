@@ -34,39 +34,38 @@ if [ "$OS" = "Linux" ]; then
   DESKTOP_DIR="$HOME/.local/share/applications"
   mkdir -p "$INSTALL_DIR" "$DESKTOP_DIR" "$HOME/.local/share/icons"
 
-  # AppImages require FUSE — install it if missing
-  if ! ldconfig -p 2>/dev/null | grep -q libfuse.so.2; then
-    if command -v apt-get >/dev/null 2>&1; then
-      info "Installing libfuse2 (required for AppImage)..."
-      sudo apt-get install -y libfuse2
-    elif command -v dnf >/dev/null 2>&1; then
-      info "Installing fuse (required for AppImage)..."
-      sudo dnf install -y fuse
-    elif command -v pacman >/dev/null 2>&1; then
-      info "Installing fuse2 (required for AppImage)..."
-      sudo pacman -S --noconfirm fuse2
-    else
-      echo ""
-      echo "  libfuse2 is required to run AppImages. Install it with your package manager:"
-      echo "    sudo apt-get install -y libfuse2   # Debian/Ubuntu"
-      echo "    sudo dnf install -y fuse           # Fedora"
-      echo "    sudo pacman -S fuse2               # Arch"
-      echo ""
-    fi
-  fi
-
   info "Installing Termpad ${VERSION} (Linux)..."
   APPIMAGE_PATH="$INSTALL_DIR/${APP_NAME}.AppImage"
+  LIB_DIR="$HOME/.local/lib/${APP_NAME}"
   curl -fsSL --progress-bar "$DOWNLOAD_URL" -o "$APPIMAGE_PATH"
   chmod +x "$APPIMAGE_PATH"
-  ln -sf "$APPIMAGE_PATH" "$INSTALL_DIR/${APP_NAME}"
+
+  # Try to run directly with FUSE; if unavailable, extract instead (no sudo needed)
+  HAS_FUSE=false
+  if ldconfig -p 2>/dev/null | grep -q libfuse.so.2; then
+    HAS_FUSE=true
+  fi
+
+  if [ "$HAS_FUSE" = true ]; then
+    ln -sf "$APPIMAGE_PATH" "$INSTALL_DIR/${APP_NAME}"
+    EXEC_CMD="${APPIMAGE_PATH} --no-sandbox"
+    ICON_PATH="${APP_NAME}"
+  else
+    info "FUSE not available — extracting AppImage (no sudo needed)..."
+    rm -rf "$LIB_DIR"
+    mkdir -p "$HOME/.local/lib"
+    cd "$INSTALL_DIR" && "$APPIMAGE_PATH" --appimage-extract >/dev/null && mv squashfs-root "$LIB_DIR"
+    ln -sf "$LIB_DIR/AppRun" "$INSTALL_DIR/${APP_NAME}"
+    EXEC_CMD="${LIB_DIR}/AppRun --no-sandbox"
+    ICON_PATH="${LIB_DIR}/${APP_NAME}.png"
+  fi
 
   cat > "$DESKTOP_DIR/${APP_NAME}.desktop" <<EOF
 [Desktop Entry]
 Name=Termpad
 Comment=A desktop terminal profile launcher
-Exec=${APPIMAGE_PATH} --no-sandbox
-Icon=${APP_NAME}
+Exec=${EXEC_CMD}
+Icon=${ICON_PATH}
 Type=Application
 Categories=Utility;TerminalEmulator;
 StartupNotify=true
