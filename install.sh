@@ -62,7 +62,7 @@ export APPDIR="$LIB_DIR"
 exec "\$APPDIR/AppRun" --no-sandbox "\$@"
 WRAPPER
     chmod +x "$INSTALL_DIR/${APP_NAME}"
-    EXEC_CMD="${LIB_DIR}/AppRun --no-sandbox"
+    EXEC_CMD="${INSTALL_DIR}/${APP_NAME}"
     ICON_PATH="${LIB_DIR}/${APP_NAME}.png"
   fi
 
