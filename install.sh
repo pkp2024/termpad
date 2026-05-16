@@ -55,7 +55,13 @@ if [ "$OS" = "Linux" ]; then
     rm -rf "$LIB_DIR"
     mkdir -p "$HOME/.local/lib"
     cd "$INSTALL_DIR" && "$APPIMAGE_PATH" --appimage-extract >/dev/null && mv squashfs-root "$LIB_DIR"
-    ln -sf "$LIB_DIR/AppRun" "$INSTALL_DIR/${APP_NAME}"
+    # AppRun needs APPDIR set explicitly when invoked outside a FUSE mount
+    cat > "$INSTALL_DIR/${APP_NAME}" <<WRAPPER
+#!/bin/bash
+export APPDIR="$LIB_DIR"
+exec "\$APPDIR/AppRun" --no-sandbox "\$@"
+WRAPPER
+    chmod +x "$INSTALL_DIR/${APP_NAME}"
     EXEC_CMD="${LIB_DIR}/AppRun --no-sandbox"
     ICON_PATH="${LIB_DIR}/${APP_NAME}.png"
   fi
