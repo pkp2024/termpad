@@ -29,27 +29,52 @@ Profiles are stored in your OS user-data directory (`~/.config/Warp Profiles/pro
 
 ---
 
-## Install (Linux)
+## Install
+
+### Linux
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/pkp2024/warp-like/main/install.sh | bash
 ```
 
-The script:
-- Downloads the latest AppImage from GitHub Releases
-- Installs it to `~/.local/bin/`
+- Downloads the latest AppImage, installs it to `~/.local/bin/`
 - Creates a `.desktop` entry so it appears in your app launcher automatically
 
-After install, open it from your app menu by searching **Warp Profiles**, or run it from the terminal:
+Open it from your app menu by searching **Warp Profiles**, or from the terminal:
 
 ```bash
 warp-profiles
 ```
 
-> **Note:** If `~/.local/bin` is not on your `PATH`, add this to `~/.bashrc` or `~/.zshrc`:
+> If `~/.local/bin` is not on your `PATH`, add this to `~/.bashrc` or `~/.zshrc`:
 > ```bash
 > export PATH="$HOME/.local/bin:$PATH"
 > ```
+
+### macOS
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pkp2024/warp-like/main/install.sh | bash
+```
+
+- Downloads the latest `.dmg` and copies `Warp Profiles.app` to `/Applications/`
+
+Open it from Launchpad or run:
+
+```bash
+open "/Applications/Warp Profiles.app"
+```
+
+### Windows
+
+Run this in PowerShell (no admin required):
+
+```powershell
+irm https://raw.githubusercontent.com/pkp2024/warp-like/main/install.ps1 | iex
+```
+
+- Downloads and runs the NSIS installer silently
+- Find it in the Start menu by searching **Warp Profiles**
 
 ---
 
