@@ -1,7 +1,6 @@
 {
   "name": "warp-like-terminal",
   "version": "1.0.0",
-  "private": true,
   "description": "A local Warp-like profile launcher for predefined terminal command sets.",
   "type": "module",
   "main": "desktop/main.js",
