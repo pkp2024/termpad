@@ -522,7 +522,7 @@ textarea {
 
 .terminal-toolbar {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto;
   gap: 12px;
   align-items: center;
   min-height: 52px;
@@ -562,12 +562,43 @@ textarea {
   white-space: nowrap;
 }
 
+.terminal-output-wrapper {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.terminal-output-wrapper.is-split {
+  grid-template-columns: 1fr 1fr;
+}
+
 .terminal-output {
   position: relative;
-  height: 100%;
   min-height: 0;
   overflow: hidden;
   padding: 12px;
+}
+
+.terminal-split-pane {
+  display: none;
+}
+
+.terminal-output-wrapper.is-split .terminal-split-pane {
+  display: block;
+}
+
+.terminal-output.is-focused,
+.terminal-split-pane.is-focused {
+  box-shadow: inset 0 0 0 2px rgb(53 208 166 / 30%);
+  border-radius: 4px;
+}
+
+.ghost-button.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #16231f;
 }
 
 .terminal-instance {
@@ -652,6 +683,44 @@ body.mode-terminal .editor-terminal-layout {
   .terminal-panel {
     height: 520px;
   }
+}
+
+.variable-modal {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-strong);
+  color: var(--ink);
+  max-width: 480px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.variable-modal::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+
+.variable-modal h3 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.variable-modal > p {
+  color: var(--muted);
+  font-size: 0.86rem;
+  margin-bottom: 20px;
+}
+
+.variable-inputs {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 @media (max-width: 620px) {

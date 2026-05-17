@@ -57,7 +57,10 @@ const state = {
   activeGroupId: null,
   activeEditor: "profile",
   tabs: [],
-  activeTabId: null
+  activeTabId: null,
+  splitMode: false,
+  splitTab: null,
+  focusedSide: "left"
 };
 
 const elements = {
@@ -76,6 +79,8 @@ const elements = {
   groupAddRow: document.querySelector("#groupAddRow"),
   terminalTabs: document.querySelector("#terminalTabs"),
   terminalOutput: document.querySelector("#terminalOutput"),
+  terminalOutputWrapper: document.querySelector("#terminalOutputWrapper"),
+  terminalSplitPane: document.querySelector("#terminalSplitPane"),
   terminalStatus: document.querySelector("#terminalStatus"),
   newTerminalTabButton: document.querySelector("#newTerminalTabButton"),
   newProfileButton: document.querySelector("#newProfileButton"),
@@ -88,14 +93,19 @@ const elements = {
   deleteGroupButton: document.querySelector("#deleteGroupButton"),
   cancelSessionButton: document.querySelector("#cancelSessionButton"),
   restartShellButton: document.querySelector("#restartShellButton"),
-  clearTerminalButton: document.querySelector("#clearTerminalButton")
+  clearTerminalButton: document.querySelector("#clearTerminalButton"),
+  splitModeButton: document.querySelector("#splitModeButton"),
+  variableModal: document.querySelector("#variableModal"),
+  variableForm: document.querySelector("#variableForm"),
+  variableInputs: document.querySelector("#variableInputs"),
+  variableCancelButton: document.querySelector("#variableCancelButton")
 };
 
 let fitFrame = 0;
 let lastFitSize = "";
 
 const resizeObserver = new ResizeObserver(() => scheduleFitActiveTerminal());
-resizeObserver.observe(elements.terminalOutput);
+resizeObserver.observe(elements.terminalOutputWrapper);
 window.addEventListener("resize", scheduleFitActiveTerminal);
 
 function normalizeSavedData(saved) {
@@ -173,6 +183,20 @@ function activeGroup() {
 
 function activeTab() {
   return state.tabs.find((tab) => tab.id === state.activeTabId);
+}
+
+function focusedTab() {
+  if (state.splitMode && state.focusedSide === "right") return state.splitTab;
+  return activeTab();
+}
+
+function setFocusedSide(side) {
+  state.focusedSide = side;
+  elements.terminalOutput.classList.toggle("is-focused", side === "left");
+  elements.terminalSplitPane.classList.toggle("is-focused", side === "right");
+  const ft = focusedTab();
+  elements.terminalStatus.textContent = ft?.status || "Ready";
+  elements.cancelSessionButton.disabled = !ft?.profileSessionRunning;
 }
 
 function setActiveProfile(id) {
@@ -445,14 +469,15 @@ function renderTabs() {
     elements.terminalTabs.append(button);
   });
 
-  const tab = activeTab();
-  elements.terminalStatus.textContent = tab?.status || "Ready";
-  elements.cancelSessionButton.disabled = !tab?.profileSessionRunning;
+  const ft = focusedTab();
+  elements.terminalStatus.textContent = ft?.status || "Ready";
+  elements.cancelSessionButton.disabled = !ft?.profileSessionRunning;
   scheduleFitActiveTerminal();
 }
 
 function setActiveTab(id) {
   state.activeTabId = id;
+  if (state.splitMode) setFocusedSide("left");
   renderTabs();
   activeTab()?.terminal.focus();
 }
@@ -488,7 +513,10 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
     profileSessionRunning: false
   };
 
-  terminal.onData((data) => sendTerminalInput(tab, data));
+  terminal.onData((data) => {
+    if (state.splitMode) setFocusedSide("left");
+    sendTerminalInput(tab, data);
+  });
   state.tabs.push(tab);
   state.activeTabId = id;
   renderTabs();
@@ -499,6 +527,81 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
 
   terminal.focus();
   return tab;
+}
+
+function createSplitTerminal() {
+  const container = document.createElement("div");
+  container.className = "terminal-instance active";
+  elements.terminalSplitPane.append(container);
+
+  const terminal = new Terminal({
+    cursorBlink: true,
+    convertEol: true,
+    fontFamily: '"JetBrains Mono", "SFMono-Regular", Consolas, monospace',
+    fontSize: 14,
+    theme: terminalTheme
+  });
+  const fitAddon = new FitAddon();
+  terminal.loadAddon(fitAddon);
+  terminal.open(container);
+
+  const tab = {
+    id: crypto.randomUUID(),
+    title: "Split",
+    status: "Ready",
+    container,
+    terminal,
+    fitAddon,
+    shellId: null,
+    shellEventSource: null,
+    activeSessionId: null,
+    eventSource: null,
+    profileSessionRunning: false
+  };
+
+  terminal.onData((data) => {
+    setFocusedSide("right");
+    sendTerminalInput(tab, data);
+  });
+
+  startInteractiveShell(tab);
+  return tab;
+}
+
+function toggleSplitMode() {
+  if (state.splitMode) {
+    state.splitMode = false;
+    elements.terminalOutputWrapper.classList.remove("is-split");
+    elements.splitModeButton.classList.remove("is-active");
+    elements.splitModeButton.textContent = "Split";
+
+    if (state.splitTab) {
+      if (state.splitTab.shellId) {
+        fetch(`/api/shells/${state.splitTab.shellId}/close`, { method: "POST" }).catch(() => {});
+      }
+      state.splitTab.shellEventSource?.close();
+      state.splitTab.terminal.dispose();
+      state.splitTab.container.remove();
+      state.splitTab = null;
+    }
+
+    setFocusedSide("left");
+    activeTab()?.terminal.focus();
+    scheduleFitActiveTerminal();
+  } else {
+    state.splitMode = true;
+    elements.terminalOutputWrapper.classList.add("is-split");
+    elements.splitModeButton.classList.add("is-active");
+    elements.splitModeButton.textContent = "Close split";
+
+    state.splitTab = createSplitTerminal();
+    requestAnimationFrame(() => {
+      state.splitTab.fitAddon.fit();
+      resizePty(state.splitTab);
+      state.splitTab.terminal.focus();
+      setFocusedSide("right");
+    });
+  }
 }
 
 let saveTimer;
@@ -517,13 +620,19 @@ function scheduleFitActiveTerminal() {
   fitFrame = requestAnimationFrame(() => {
     fitFrame = 0;
     const tab = activeTab();
-    if (!tab) return;
+    if (tab) {
+      const nextFitSize = `${tab.container.clientWidth}x${tab.container.clientHeight}`;
+      if (nextFitSize !== lastFitSize) {
+        lastFitSize = nextFitSize;
+        tab.fitAddon.fit();
+        resizePty(tab);
+      }
+    }
 
-    const nextFitSize = `${tab.container.clientWidth}x${tab.container.clientHeight}`;
-    if (nextFitSize === lastFitSize) return;
-    lastFitSize = nextFitSize;
-    tab.fitAddon.fit();
-    resizePty(tab);
+    if (state.splitMode && state.splitTab) {
+      state.splitTab.fitAddon.fit();
+      resizePty(state.splitTab);
+    }
   });
 }
 
@@ -623,8 +732,10 @@ async function sendTerminalInput(tab, input) {
 
 function updateTabStatus(tab, status) {
   tab.status = status;
-  if (tab.id === state.activeTabId) {
+  const ft = focusedTab();
+  if (ft && tab.id === ft.id) {
     elements.terminalStatus.textContent = status;
+    elements.cancelSessionButton.disabled = !tab.profileSessionRunning;
   }
 }
 
@@ -644,8 +755,91 @@ function openActiveInNewWindow() {
   }
 }
 
-async function launchProfileInTab(profile, tab = activeTab()) {
+// ── Profile variables ─────────────────────────────────────────────────────────
+
+const VAR_RE = /\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g;
+
+function extractVariables(commands) {
+  const seen = new Set();
+  const vars = [];
+  for (const cmd of commands) {
+    for (const match of cmd.matchAll(VAR_RE)) {
+      if (!seen.has(match[1])) {
+        seen.add(match[1]);
+        vars.push(match[1]);
+      }
+    }
+  }
+  return vars;
+}
+
+function substituteVariables(commands, values) {
+  return commands.map((cmd) =>
+    cmd.replace(VAR_RE, (_, name) => values[name] ?? `{{${name}}}`)
+  );
+}
+
+function showVariableModal(vars, profileName = null) {
+  return new Promise((resolve) => {
+    elements.variableModal.querySelector("h3").textContent =
+      profileName ? `Variables — ${profileName}` : "Profile variables";
+
+    elements.variableInputs.innerHTML = "";
+    for (const name of vars) {
+      const label = document.createElement("label");
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = name;
+      const input = document.createElement("input");
+      input.name = name;
+      input.autocomplete = "off";
+      label.append(nameSpan, input);
+      elements.variableInputs.append(label);
+    }
+
+    elements.variableModal.showModal();
+    elements.variableInputs.querySelector("input")?.focus();
+
+    let resolved = false;
+
+    function done(values) {
+      if (resolved) return;
+      resolved = true;
+      if (elements.variableModal.open) elements.variableModal.close();
+      resolve(values);
+    }
+
+    elements.variableForm.addEventListener("submit", function onSubmit(e) {
+      e.preventDefault();
+      elements.variableForm.removeEventListener("submit", onSubmit);
+      const values = {};
+      for (const name of vars) {
+        values[name] = elements.variableForm.elements[name]?.value ?? "";
+      }
+      done(values);
+    }, { once: true });
+
+    elements.variableCancelButton.addEventListener("click", () => done(null), { once: true });
+    elements.variableModal.addEventListener("close", () => done(null), { once: true });
+  });
+}
+
+// ── Launch ────────────────────────────────────────────────────────────────────
+
+async function launchProfileInTab(profile, tab = activeTab(), resolvedCommands = null) {
   if (!profile || !tab) return;
+
+  let commands = resolvedCommands;
+
+  if (!commands) {
+    const vars = extractVariables(profile.commands);
+    if (vars.length > 0) {
+      const values = await showVariableModal(vars, profile.name);
+      if (values === null) return;
+      commands = substituteVariables(profile.commands, values);
+    } else {
+      commands = profile.commands;
+    }
+  }
 
   tab.title = profile.name;
   tab.terminal.clear();
@@ -656,7 +850,7 @@ async function launchProfileInTab(profile, tab = activeTab()) {
   await startInteractiveShell(tab, { cwd: profile.cwd });
   if (!tab.shellId) return;
 
-  const input = profile.commands.join("\n") + "\n";
+  const input = commands.join("\n") + "\n";
   await fetch(`/api/shells/${tab.shellId}/input`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -671,17 +865,32 @@ function profilesForGroup(group) {
   return group.profileIds.map((id) => profilesById.get(id)).filter(Boolean);
 }
 
-function launchGroup(group) {
+async function launchGroup(group) {
   const profiles = profilesForGroup(group);
+
+  // Resolve variables for each profile upfront before opening any tabs
+  const resolvedCommandsList = [];
+  for (const profile of profiles) {
+    const vars = extractVariables(profile.commands);
+    if (vars.length > 0) {
+      const values = await showVariableModal(vars, profile.name);
+      if (values === null) return;
+      resolvedCommandsList.push(substituteVariables(profile.commands, values));
+    } else {
+      resolvedCommandsList.push(profile.commands);
+    }
+  }
+
   let firstTabId = null;
 
   profiles.forEach((profile, index) => {
     const tab = createTerminalTab({ title: profile.name, startShell: false });
     if (index === 0) firstTabId = tab.id;
+    const resolved = resolvedCommandsList[index];
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         tab.fitAddon.fit();
-        launchProfileInTab(profile, tab);
+        launchProfileInTab(profile, tab, resolved);
       });
     });
   });
@@ -718,6 +927,8 @@ function handleSessionEvent(tab, event) {
     tab.terminal.write(`\r\n[exit ${event.exitCode}]\r\n`);
   }
 }
+
+// ── Event listeners ───────────────────────────────────────────────────────────
 
 elements.newProfileButton.addEventListener("click", () => {
   const profile = {
@@ -802,23 +1013,39 @@ elements.launchProfileButton.addEventListener("click", openActiveInNewWindow);
 elements.newTerminalTabButton.addEventListener("click", () => createTerminalTab());
 
 elements.clearTerminalButton.addEventListener("click", () => {
-  const tab = activeTab();
+  const tab = focusedTab();
   tab?.terminal.clear();
   tab?.terminal.focus();
 });
 
 elements.cancelSessionButton.addEventListener("click", async () => {
-  const tab = activeTab();
+  const tab = focusedTab();
   if (!tab?.activeSessionId) return;
   await fetch(`/api/sessions/${tab.activeSessionId}/cancel`, { method: "POST" });
 });
 
 elements.restartShellButton.addEventListener("click", () => {
-  startInteractiveShell(activeTab(), { clear: true });
+  const tab = focusedTab();
+  if (!tab) return;
+  startInteractiveShell(tab, { clear: true });
+  tab.terminal.focus();
+});
+
+elements.terminalOutput.addEventListener("click", () => {
+  if (state.splitMode) setFocusedSide("left");
   activeTab()?.terminal.focus();
 });
 
-elements.terminalOutput.addEventListener("click", () => activeTab()?.terminal.focus());
+elements.terminalSplitPane.addEventListener("click", () => {
+  if (state.splitMode) {
+    setFocusedSide("right");
+    state.splitTab?.terminal.focus();
+  }
+});
+
+elements.splitModeButton.addEventListener("click", toggleSplitMode);
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
 
 (async () => {
   await initProfiles();
