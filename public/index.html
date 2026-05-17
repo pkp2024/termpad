@@ -123,14 +123,32 @@
               </div>
               <p id="terminalStatus">Ready</p>
               <button id="cancelSessionButton" class="ghost-button compact" type="button" disabled>Cancel</button>
+              <button id="splitModeButton" class="ghost-button compact" type="button">Split</button>
               <button id="restartShellButton" class="ghost-button compact" type="button">Restart shell</button>
               <button id="clearTerminalButton" class="ghost-button compact" type="button">Clear</button>
             </div>
-            <div id="terminalOutput" class="terminal-output" aria-label="Terminal"></div>
+            <div id="terminalOutputWrapper" class="terminal-output-wrapper">
+              <div id="terminalOutput" class="terminal-output" aria-label="Terminal"></div>
+              <div id="terminalSplitPane" class="terminal-output terminal-split-pane" aria-label="Split terminal"></div>
+            </div>
           </section>
         </div>
       </section>
     </main>
+
+    <dialog id="variableModal" class="variable-modal">
+      <h3>Profile variables</h3>
+      <p>Enter values for the variables used in this profile's commands.</p>
+      <form id="variableForm">
+        <div id="variableInputs" class="variable-inputs"></div>
+        <div class="modal-actions">
+          <button id="variableCancelButton" class="ghost-button" type="button">Cancel</button>
+          <button class="run-button" type="submit">
+            <span aria-hidden="true">▶</span> Launch
+          </button>
+        </div>
+      </form>
+    </dialog>
 
     <script type="module" src="/app.js"></script>
   </body>
