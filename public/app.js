@@ -1214,6 +1214,19 @@ async function launchProfileInTab(profile, tab = activeTab(), resolvedCommands =
   await startInteractiveShell(tab, { cwd: profile.cwd });
   if (!tab.shellId) return;
 
+  await new Promise((resolve) => {
+    const es = tab.shellEventSource;
+    if (!es) { resolve(); return; }
+    const onMsg = (msg) => {
+      const event = JSON.parse(msg.data);
+      if (event.type === "output") { es.removeEventListener("message", onMsg); resolve(); }
+    };
+    es.addEventListener("message", onMsg);
+    setTimeout(resolve, 3000);
+  });
+
+  if (!tab.shellId) return;
+
   const input = commands.join("\n") + "\n";
   await fetch(`/api/shells/${tab.shellId}/input`, {
     method: "POST",
