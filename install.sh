@@ -81,6 +81,21 @@ EOF
     update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
   fi
 
+  # Nautilus "Open in Termpad" context menu script
+  NAUTILUS_SCRIPTS="$HOME/.local/share/nautilus/scripts"
+  mkdir -p "$NAUTILUS_SCRIPTS"
+  cat > "$NAUTILUS_SCRIPTS/Open in Termpad" <<'SCRIPT'
+#!/usr/bin/env bash
+if [ -n "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" ]; then
+  DIR=$(echo "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" | head -1 | tr -d '\r\n')
+  [ -f "$DIR" ] && DIR=$(dirname "$DIR")
+else
+  DIR=$(python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read().strip().replace('file://','')))" <<< "$NAUTILUS_SCRIPT_CURRENT_URI" 2>/dev/null || echo "$HOME")
+fi
+termpad --cwd "$DIR"
+SCRIPT
+  chmod +x "$NAUTILUS_SCRIPTS/Open in Termpad"
+
   if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo ""
     echo "  Add this to your ~/.bashrc or ~/.zshrc:"
@@ -91,6 +106,7 @@ EOF
   ok "Termpad ${VERSION} installed!"
   echo "  App launcher: search for 'Termpad' in your app menu"
   echo "  CLI:          ${APP_NAME}"
+  echo "  File manager: right-click a folder → Scripts → Open in Termpad"
 
 elif [ "$OS" = "Darwin" ]; then
   DOWNLOAD_URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*\.dmg"' | grep -o 'https://[^"]*' | head -1)

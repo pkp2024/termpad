@@ -98,8 +98,18 @@ app.whenReady().then(async () => {
   appServer = serverInfo.server;
   serverUrl = serverInfo.url;
 
-  const profileName = process.argv.slice(app.isPackaged ? 1 : 2).find(a => !a.startsWith("-"));
-  if (profileName) {
+  const rawArgs = process.argv.slice(app.isPackaged ? 1 : 2);
+  let cwdArg = null;
+  let profileName = null;
+  for (let i = 0; i < rawArgs.length; i++) {
+    if (rawArgs[i] === "--cwd" && rawArgs[i + 1]) { cwdArg = rawArgs[++i]; }
+    else if (rawArgs[i].startsWith("--cwd=")) { cwdArg = rawArgs[i].slice(6); }
+    else if (!rawArgs[i].startsWith("-") && !profileName) { profileName = rawArgs[i]; }
+  }
+
+  if (cwdArg) {
+    createWindow(`/?openShell=${encodeURIComponent(cwdArg)}`);
+  } else if (profileName) {
     const saved = readSavedProfiles();
     const profiles = saved?.profiles ?? [];
     const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());

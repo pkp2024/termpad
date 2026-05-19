@@ -1446,8 +1446,18 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
   const params = new URLSearchParams(window.location.search);
   const launchProfileId = params.get("launchProfile");
   const launchGroupId = params.get("launchGroup");
+  const openShellCwd = params.get("openShell");
 
-  if (launchGroupId) {
+  if (openShellCwd) {
+    document.body.classList.add("mode-terminal");
+    const tab = createTerminalTab({ title: openShellCwd.split("/").filter(Boolean).pop() || "Terminal", startShell: false });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        tab.fitAddon.fit();
+        startInteractiveShell(tab, { cwd: openShellCwd });
+      });
+    });
+  } else if (launchGroupId) {
     document.body.classList.add("mode-terminal");
     const group = state.groups.find((item) => item.id === launchGroupId);
     if (group && profilesForGroup(group).length) {
