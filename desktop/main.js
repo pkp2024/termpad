@@ -86,6 +86,8 @@ autoUpdater.on("update-downloaded", () => {
 });
 
 app.whenReady().then(async () => {
+  const { session } = require("electron");
+  if (!app.isPackaged) await session.defaultSession.clearCache();
   const serverInfo = await startServer({ port: 0, appRoot: app.getAppPath() });
   appServer = serverInfo.server;
   serverUrl = serverInfo.url;
