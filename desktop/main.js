@@ -128,20 +128,23 @@ app.whenReady().then(async () => {
     else if (!rawArgs[i].startsWith("-") && !profileName) { profileName = rawArgs[i]; }
   }
 
+  let mainWindow;
   if (cwdArg) {
-    createWindow(`/?openShell=${encodeURIComponent(cwdArg)}`);
+    mainWindow = createWindow(`/?openShell=${encodeURIComponent(cwdArg)}`);
   } else if (profileName) {
     const saved = readSavedProfiles();
     const profiles = saved?.profiles ?? [];
     const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
-    createWindow(profile ? `/?launchProfile=${encodeURIComponent(profile.id)}` : "/");
+    mainWindow = createWindow(profile ? `/?launchProfile=${encodeURIComponent(profile.id)}` : "/");
   } else {
-    createWindow();
+    mainWindow = createWindow();
   }
 
   if (app.isPackaged) {
-    checkForUpdateManually();
-    if (process.env.APPIMAGE) autoUpdater.checkForUpdates();
+    mainWindow.webContents.once("did-finish-load", () => {
+      checkForUpdateManually();
+      if (process.env.APPIMAGE) autoUpdater.checkForUpdates();
+    });
   }
 });
 
