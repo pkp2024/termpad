@@ -109,7 +109,7 @@ termpad --cwd /path/to/project
 
 ## Changelog
 
-### Unreleased
+### v1.13.0
 
 - **YAML theme editor** — toggle between the swatch picker and a YAML editor to fine-tune any theme color; changes apply live to the terminal
 - **Custom themes** — save any YAML configuration as a named theme that appears in the swatch picker alongside built-in themes
