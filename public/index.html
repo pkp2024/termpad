@@ -63,10 +63,6 @@
                   Profile name
                   <input id="profileNameInput" autocomplete="off" />
                 </label>
-                <label>
-                  Working directory
-                  <input id="cwdInput" placeholder="/home/you/project" autocomplete="off" />
-                </label>
                 <div class="switch-row">
                   <div>
                     <strong>Stop on first error</strong>
@@ -84,19 +80,40 @@
                   <span>Appearance</span>
                 </summary>
                 <div class="editor-section-body">
-                  <div class="appearance-section">
-                    <div class="appearance-label">Theme</div>
-                    <div id="themeSwatches" class="theme-swatches"></div>
+                  <div class="mode-toggle-bar">
+                    <button class="mode-toggle-btn active" data-target="theme" data-mode="swatches" type="button">Swatches</button>
+                    <button class="mode-toggle-btn" data-target="theme" data-mode="yaml" type="button">YAML</button>
                   </div>
-                  <label>
-                    Font
-                    <select id="fontSelect" class="font-select">
-                      <option value="jetbrains">JetBrains Mono</option>
-                      <option value="fira">Fira Code</option>
-                      <option value="sourceCode">Source Code Pro</option>
-                      <option value="ubuntu">Ubuntu Mono</option>
-                    </select>
-                  </label>
+                  <div id="themeSwatchesView">
+                    <div class="appearance-section">
+                      <div class="appearance-label">Theme</div>
+                      <div id="themeSwatches" class="theme-swatches"></div>
+                      <button id="showMoreThemesBtn" class="show-more-btn" type="button" hidden>Show more</button>
+                    </div>
+                    <label>
+                      Font
+                      <select id="fontSelect" class="font-select">
+                        <option value="jetbrains">JetBrains Mono</option>
+                        <option value="fira">Fira Code</option>
+                        <option value="sourceCode">Source Code Pro</option>
+                        <option value="ubuntu">Ubuntu Mono</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div id="themeYamlView" hidden>
+                    <label>
+                      Custom theme
+                      <textarea id="themeYamlInput" class="theme-yaml-editor" spellcheck="false" placeholder="background: &quot;#0b1117&quot;&#10;foreground: &quot;#d4d4d4&quot;&#10;..."></textarea>
+                    </label>
+                    <div class="yaml-theme-actions">
+                      <div id="createThemeForm" class="create-theme-form" hidden>
+                        <input id="customThemeNameInput" placeholder="Theme name" autocomplete="off" />
+                        <button id="confirmCreateThemeBtn" class="ghost-button compact" type="button">Save</button>
+                        <button id="cancelCreateThemeBtn" class="icon-button compact-icon" type="button">×</button>
+                      </div>
+                      <button id="createCustomThemeBtn" class="ghost-button compact" type="button">+ Save as theme</button>
+                    </div>
+                  </div>
                 </div>
               </details>
 
@@ -127,8 +144,26 @@
                   <span>Commands</span>
                   <button id="addCommandButton" class="icon-button compact-icon" type="button" aria-label="Add command">+</button>
                 </summary>
-                <p class="editor-section-hint">Run top to bottom when this profile launches.</p>
-                <div id="commandList" class="command-list"></div>
+                <div class="editor-section-body">
+                  <div class="mode-toggle-bar">
+                    <button class="mode-toggle-btn active" data-target="command" data-mode="list" type="button">List</button>
+                    <button class="mode-toggle-btn" data-target="command" data-mode="script" type="button">Script</button>
+                  </div>
+                  <div id="commandListView">
+                    <p class="editor-section-hint">Run top to bottom when this profile launches.</p>
+                    <div id="commandList" class="command-list"></div>
+                  </div>
+                  <div id="scriptView" hidden>
+                    <label>
+                      Script
+                      <textarea id="scriptTextarea" class="theme-yaml-editor script-editor" spellcheck="false" placeholder="#!/bin/bash&#10;cd /home/you/project&#10;npm start"></textarea>
+                    </label>
+                    <div class="script-actions">
+                      <span id="scriptSaveStatus" class="script-save-status"></span>
+                      <button id="saveScriptButton" class="ghost-button compact" type="button">Save script</button>
+                    </div>
+                  </div>
+                </div>
               </details>
 
               <div class="editor-actions">
