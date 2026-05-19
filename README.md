@@ -109,6 +109,10 @@ termpad --cwd /path/to/project
 
 ## Changelog
 
+### v1.14.0
+
+- **Update banner** — shows a notification bar when a newer version is available; prompts restart when update is downloaded (AppImage with FUSE) or directs to the install script (extracted mode)
+
 ### v1.13.0
 
 - **YAML theme editor** — toggle between the swatch picker and a YAML editor to fine-tune any theme color; changes apply live to the terminal
