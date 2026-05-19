@@ -33,6 +33,16 @@ ipcMain.handle("window:open", (_event, path) => {
   createWindow(path);
 });
 
+let managerWindow = null;
+ipcMain.handle("manager:open", () => {
+  if (managerWindow && !managerWindow.isDestroyed()) {
+    managerWindow.focus();
+    return;
+  }
+  managerWindow = createWindow("/?manager=1");
+  managerWindow.on("closed", () => { managerWindow = null; });
+});
+
 function createWindow(path = "/") {
   const window = new BrowserWindow({
     width: 1280,

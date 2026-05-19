@@ -1,7 +1,8 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { existsSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
 import pty from "node-pty";
@@ -215,14 +216,41 @@ async function runSession(session) {
 function createShellSession(cwd, size = {}) {
   const id = randomUUID();
   const { cols, rows } = parsePtySize(size);
-  const shell = pty.spawn(process.env.SHELL || "/bin/bash", [], {
+
+  const aliases = Array.isArray(size.aliases) ? size.aliases : [];
+  const shellBin = process.env.SHELL || "/bin/bash";
+  const shellName = shellBin.split("/").pop();
+  let initFile = null;
+  let initDir = null;
+  let spawnArgs = [];
+  let extraEnv = {};
+
+  if (aliases.length) {
+    const aliasDefs = aliases.map(a => `alias ${a.name}='${a.command.replace(/'/g, "'\\''")}'`);
+    if (shellName === "bash") {
+      initFile = join(tmpdir(), `termpad-init-${id}.sh`);
+      writeFileSync(initFile, ['[ -f ~/.bashrc ] && source ~/.bashrc', ...aliasDefs].join("\n") + "\n");
+      spawnArgs = ["--init-file", initFile];
+    } else if (shellName === "zsh") {
+      initDir = join(tmpdir(), `termpad-zsh-${id}`);
+      mkdirSync(initDir);
+      initFile = join(initDir, ".zshrc");
+      writeFileSync(initFile, ['[ -f "$HOME/.zshrc" ] && source "$HOME/.zshrc"', ...aliasDefs].join("\n") + "\n");
+      extraEnv = { ZDOTDIR: initDir };
+    } else if (shellName === "fish") {
+      spawnArgs = ["-C", aliasDefs.join("; ")];
+    }
+  }
+
+  const shell = pty.spawn(shellBin, spawnArgs, {
     name: "xterm-256color",
     cols,
     rows,
     cwd,
     env: {
       ...process.env,
-      TERM: "xterm-256color"
+      TERM: "xterm-256color",
+      ...extraEnv
     }
   });
 
@@ -244,6 +272,8 @@ function createShellSession(cwd, size = {}) {
 
   shell.onExit(({ exitCode, signal }) => {
     session.closed = true;
+    if (initDir) try { rmSync(initDir, { recursive: true }); } catch {}
+    else if (initFile) try { rmSync(initFile); } catch {}
     emit(session, {
       type: "shell",
       status: "closed",
