@@ -1817,15 +1817,11 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
   }
 
   api.onUpdateAvailable((version) => {
-    showBanner(`Termpad v${version} is available — downloading in the background…`);
+    showBanner(`Termpad v${version} is available — re-run the install script to update.`);
   });
 
   api.onUpdateDownloaded(() => {
     showBanner("Update downloaded and ready to install.", { showInstall: true });
-  });
-
-  api.onUpdateError(() => {
-    showBanner("A new version is available — re-run the install script to update.");
   });
 
   installBtn.addEventListener("click", () => api.installUpdate());

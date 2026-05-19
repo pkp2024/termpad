@@ -94,10 +94,23 @@ autoUpdater.on("update-downloaded", () => {
 
 autoUpdater.on("error", (err) => {
   console.error("Auto-updater:", err.message);
-  notifyWindows("update:error");
 });
 
 ipcMain.on("update:install", () => autoUpdater.quitAndInstall());
+
+async function checkForUpdateManually() {
+  try {
+    const res = await fetch("https://api.github.com/repos/pkp2024/termpad/releases/latest");
+    const { tag_name } = await res.json();
+    const latest = tag_name?.replace(/^v/, "");
+    const current = app.getVersion();
+    if (latest && latest !== current) {
+      notifyWindows("update:available", latest);
+    }
+  } catch {
+    // network issue, skip silently
+  }
+}
 
 app.whenReady().then(async () => {
   const { session } = require("electron");
@@ -126,7 +139,10 @@ app.whenReady().then(async () => {
     createWindow();
   }
 
-  if (app.isPackaged) autoUpdater.checkForUpdates();
+  if (app.isPackaged) {
+    checkForUpdateManually();
+    if (process.env.APPIMAGE) autoUpdater.checkForUpdates();
+  }
 });
 
 app.on("activate", () => {
