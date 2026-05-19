@@ -27,7 +27,10 @@ LATEST=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest")
 VERSION=$(echo "$LATEST" | grep -o '"tag_name": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
 
 if [ "$OS" = "Linux" ]; then
-  DOWNLOAD_URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*\.AppImage"' | grep -o 'https://[^"]*' | head -1)
+  APPIMAGE_NAME="Termpad-${VERSION#v}.AppImage"
+  DOWNLOAD_URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*'"$APPIMAGE_NAME"'"' | grep -o 'https://[^"]*')
+  # Fall back to any AppImage if exact name not found
+  [ -n "$DOWNLOAD_URL" ] || DOWNLOAD_URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*\.AppImage"' | grep -o 'https://[^"]*' | tail -1)
   [ -n "$DOWNLOAD_URL" ] || error "Could not find an AppImage in the latest release."
 
   INSTALL_DIR="$HOME/.local/bin"
