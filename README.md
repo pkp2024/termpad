@@ -109,6 +109,10 @@ termpad --cwd /path/to/project
 
 ## Changelog
 
+### v1.15.0
+
+- **Update banner: copy install command** — "Copy install command" button copies the one-liner to clipboard so updating is a single paste into any terminal
+
 ### v1.14.0
 
 - **Update banner** — shows a notification bar when a newer version is available; prompts restart when update is downloaded (AppImage with FUSE) or directs to the install script (extracted mode)

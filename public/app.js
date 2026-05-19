@@ -1808,16 +1808,20 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
   const banner = document.getElementById("updateBanner");
   const bannerText = document.getElementById("updateBannerText");
   const installBtn = document.getElementById("updateInstallBtn");
+  const copyBtn = document.getElementById("updateCopyBtn");
   const closeBtn = document.getElementById("updateBannerClose");
 
-  function showBanner(text, { showInstall = false } = {}) {
+  const INSTALL_CMD = "curl -fsSL https://raw.githubusercontent.com/pkp2024/termpad/main/install.sh | bash";
+
+  function showBanner(text, { showInstall = false, showCopy = false } = {}) {
     bannerText.textContent = text;
     installBtn.hidden = !showInstall;
+    copyBtn.hidden = !showCopy;
     banner.hidden = false;
   }
 
   api.onUpdateAvailable((version) => {
-    showBanner(`Termpad v${version} is available — re-run the install script to update.`);
+    showBanner(`Termpad v${version} is available.`, { showCopy: true });
   });
 
   api.onUpdateDownloaded(() => {
@@ -1825,5 +1829,14 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
   });
 
   installBtn.addEventListener("click", () => api.installUpdate());
+
+  copyBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(INSTALL_CMD).then(() => {
+      const prev = copyBtn.textContent;
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => { copyBtn.textContent = prev; }, 2000);
+    });
+  });
+
   closeBtn.addEventListener("click", () => { banner.hidden = true; });
 }());
