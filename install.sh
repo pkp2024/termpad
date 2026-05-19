@@ -23,15 +23,14 @@ case "$OS" in
 esac
 
 info "Fetching latest release from GitHub..."
-LATEST=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest")
-VERSION=$(echo "$LATEST" | grep -o '"tag_name": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
+# Use redirect URL — no API rate limit
+LATEST_URL="https://github.com/${REPO}/releases/latest"
+VERSION=$(curl -fsSL -o /dev/null -w '%{url_effective}' "$LATEST_URL" | grep -o 'v[0-9][^/]*$')
+[ -n "$VERSION" ] || error "Could not determine latest version."
 
 if [ "$OS" = "Linux" ]; then
   APPIMAGE_NAME="Termpad-${VERSION#v}.AppImage"
-  DOWNLOAD_URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*'"$APPIMAGE_NAME"'"' | grep -o 'https://[^"]*')
-  # Fall back to any AppImage if exact name not found
-  [ -n "$DOWNLOAD_URL" ] || DOWNLOAD_URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*\.AppImage"' | grep -o 'https://[^"]*' | tail -1)
-  [ -n "$DOWNLOAD_URL" ] || error "Could not find an AppImage in the latest release."
+  DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${APPIMAGE_NAME}"
 
   INSTALL_DIR="$HOME/.local/bin"
   DESKTOP_DIR="$HOME/.local/share/applications"
@@ -112,8 +111,8 @@ SCRIPT
   echo "  File manager: right-click a folder → Scripts → Open in Termpad"
 
 elif [ "$OS" = "Darwin" ]; then
-  DOWNLOAD_URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*\.dmg"' | grep -o 'https://[^"]*' | head -1)
-  [ -n "$DOWNLOAD_URL" ] || error "Could not find a .dmg in the latest release."
+  DMG_NAME="Termpad-${VERSION#v}-arm64.dmg"
+  DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${DMG_NAME}"
 
   info "Installing Termpad ${VERSION} (macOS)..."
   TMP_DMG="$(mktemp /tmp/termpad-XXXXXX.dmg)"
