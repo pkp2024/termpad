@@ -1306,7 +1306,8 @@ function handleSessionEvent(tab, event) {
 
 // ── Event listeners ───────────────────────────────────────────────────────────
 
-elements.newProfileButton.addEventListener("click", () => {
+elements.newProfileButton.addEventListener("click", (e) => {
+  e.stopPropagation();
   const profile = {
     id: crypto.randomUUID(),
     name: "New profile",
@@ -1321,7 +1322,8 @@ elements.newProfileButton.addEventListener("click", () => {
   renderEditor();
 });
 
-elements.newGroupButton.addEventListener("click", () => {
+elements.newGroupButton.addEventListener("click", (e) => {
+  e.stopPropagation();
   const group = {
     id: crypto.randomUUID(),
     name: "New group",

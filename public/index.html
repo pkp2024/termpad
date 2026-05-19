@@ -21,21 +21,21 @@
           </div>
         </div>
 
-        <div class="sidebar-section">
-          <button id="newProfileButton" class="primary-button" type="button">
-            <span aria-hidden="true">+</span>
-            New profile
-          </button>
+        <details class="sidebar-section" open>
+          <summary class="sidebar-section-header">
+            <span class="sidebar-section-title">Profiles</span>
+            <button id="newProfileButton" class="icon-button compact-icon" type="button" aria-label="New profile">+</button>
+          </summary>
           <nav id="profileList" class="profile-list" aria-label="Saved profiles"></nav>
-        </div>
+        </details>
 
-        <div class="sidebar-section">
-          <button id="newGroupButton" class="ghost-button sidebar-action" type="button">
-            <span aria-hidden="true">+</span>
-            New group
-          </button>
+        <details class="sidebar-section" open>
+          <summary class="sidebar-section-header">
+            <span class="sidebar-section-title">Groups</span>
+            <button id="newGroupButton" class="icon-button compact-icon" type="button" aria-label="New group">+</button>
+          </summary>
           <nav id="groupList" class="profile-list" aria-label="Profile groups"></nav>
-        </div>
+        </details>
       </aside>
 
       <section class="workspace">
