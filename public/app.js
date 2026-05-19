@@ -492,6 +492,17 @@ function setActiveTab(id) {
   activeTab()?.terminal.focus();
 }
 
+function attachCopyHandler(terminal) {
+  terminal.attachCustomKeyEventHandler((e) => {
+    if (e.type === "keydown" && e.ctrlKey && e.shiftKey && e.key === "C") {
+      const sel = terminal.getSelection();
+      if (sel) navigator.clipboard.writeText(sel);
+      return false;
+    }
+    return true;
+  });
+}
+
 function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
   const id = crypto.randomUUID();
   const container = document.createElement("div");
@@ -501,13 +512,16 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
   const terminal = new Terminal({
     cursorBlink: true,
     convertEol: true,
+    copyOnSelect: true,
     fontFamily: '"JetBrains Mono", "SFMono-Regular", Consolas, monospace',
     fontSize: 14,
+    lineHeight: 1.1,
     theme: terminalTheme
   });
   const fitAddon = new FitAddon();
   terminal.loadAddon(fitAddon);
   terminal.open(container);
+  attachCopyHandler(terminal);
 
   const tab = {
     id,
@@ -550,13 +564,16 @@ function createSplitPane() {
   const terminal = new Terminal({
     cursorBlink: true,
     convertEol: true,
+    copyOnSelect: true,
     fontFamily: '"JetBrains Mono", "SFMono-Regular", Consolas, monospace',
     fontSize: 14,
+    lineHeight: 1.1,
     theme: terminalTheme
   });
   const fitAddon = new FitAddon();
   terminal.loadAddon(fitAddon);
   terminal.open(containerEl);
+  attachCopyHandler(terminal);
 
   const pane = {
     id: crypto.randomUUID(),

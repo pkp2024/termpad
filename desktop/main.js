@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { startServer } from "../server.js";
 
 const require = createRequire(import.meta.url);
-const { app, BrowserWindow, shell, ipcMain } = require("electron");
+const { app, BrowserWindow, shell, ipcMain, dialog } = require("electron");
+const { autoUpdater } = require("electron-updater");
 
 let appServer;
 let serverUrl;
@@ -73,11 +74,23 @@ function createWindow(path = "/") {
   return window;
 }
 
+autoUpdater.on("update-downloaded", () => {
+  dialog.showMessageBox({
+    type: "info",
+    title: "Update ready",
+    message: "A new version of Termpad has been downloaded. Restart now to apply it?",
+    buttons: ["Restart", "Later"]
+  }).then(({ response }) => {
+    if (response === 0) autoUpdater.quitAndInstall();
+  });
+});
+
 app.whenReady().then(async () => {
   const serverInfo = await startServer({ port: 0, appRoot: app.getAppPath() });
   appServer = serverInfo.server;
   serverUrl = serverInfo.url;
   createWindow();
+  if (app.isPackaged) autoUpdater.checkForUpdates();
 });
 
 app.on("activate", () => {
