@@ -1386,6 +1386,20 @@ elements.deleteGroupButton.addEventListener("click", () => {
 elements.launchProfileButton.addEventListener("click", openActiveInNewWindow);
 elements.newTerminalTabButton.addEventListener("click", () => createTerminalTab());
 
+document.querySelector("#closeManagerButton").addEventListener("click", () => {
+  document.body.classList.remove("mode-manager");
+  document.body.classList.add("mode-terminal");
+  if (!state.tabs.length) createTerminalTab();
+  else activeTab()?.terminal.focus();
+  scheduleFitActiveTerminal();
+});
+
+document.querySelector("#toggleManagerButton").addEventListener("click", () => {
+  document.body.classList.remove("mode-terminal");
+  document.body.classList.add("mode-manager");
+  renderEditor();
+});
+
 elements.clearTerminalButton.addEventListener("click", () => {
   const tab = focusedTab();
   tab?.terminal.clear();
