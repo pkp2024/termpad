@@ -14,13 +14,15 @@ function profilesPath() {
   return join(app.getPath("userData"), "profiles.json");
 }
 
-ipcMain.handle("profiles:read", () => {
+function readSavedProfiles() {
   try {
     return JSON.parse(readFileSync(profilesPath(), "utf8"));
   } catch {
     return null;
   }
-});
+}
+
+ipcMain.handle("profiles:read", () => readSavedProfiles());
 
 ipcMain.handle("profiles:write", (_event, profiles) => {
   writeFileSync(profilesPath(), JSON.stringify(profiles));
@@ -95,7 +97,17 @@ app.whenReady().then(async () => {
   const serverInfo = await startServer({ port: 0, appRoot: app.getAppPath() });
   appServer = serverInfo.server;
   serverUrl = serverInfo.url;
-  createWindow();
+
+  const profileName = process.argv.slice(app.isPackaged ? 1 : 2).find(a => !a.startsWith("-"));
+  if (profileName) {
+    const saved = readSavedProfiles();
+    const profiles = saved?.profiles ?? [];
+    const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
+    createWindow(profile ? `/?launchProfile=${encodeURIComponent(profile.id)}` : "/");
+  } else {
+    createWindow();
+  }
+
   if (app.isPackaged) autoUpdater.checkForUpdates();
 });
 
