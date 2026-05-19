@@ -1041,19 +1041,27 @@ function updateTabStatus(tab, status) {
   }
 }
 
+function openInNewWindow(path) {
+  if (window.electronAPI?.openWindow) {
+    window.electronAPI.openWindow(path);
+  } else {
+    window.open(path, "_blank");
+  }
+}
+
 function openActiveInNewWindow() {
   saveCurrentEditor();
 
   if (state.activeEditor === "group") {
     const group = activeGroup();
     if (!group?.profileIds.length) return;
-    window.open(`/?launchGroup=${encodeURIComponent(group.id)}`, "_blank");
+    openInNewWindow(`/?launchGroup=${encodeURIComponent(group.id)}`);
     return;
   }
 
   const profile = activeProfile();
   if (profile) {
-    window.open(`/?launchProfile=${encodeURIComponent(profile.id)}`, "_blank");
+    openInNewWindow(`/?launchProfile=${encodeURIComponent(profile.id)}`);
   }
 }
 

@@ -27,6 +27,10 @@ ipcMain.handle("profiles:write", (_event, profiles) => {
   return true;
 });
 
+ipcMain.handle("window:open", (_event, path) => {
+  createWindow(path);
+});
+
 function createWindow(path = "/") {
   const window = new BrowserWindow({
     width: 1280,
