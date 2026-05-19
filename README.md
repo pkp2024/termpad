@@ -10,7 +10,11 @@ A lightweight desktop terminal launcher. Define named profiles — each a list o
 
 **Groups** let you bundle multiple profiles together so they all launch at once, each in its own terminal tab.
 
-**The terminal panel** is a full xterm.js terminal wired to a real PTY — you get color, cursor movement, and interactive programs (vim, htop, etc.) just as you would in a normal terminal.
+**The terminal panel** is a full xterm.js terminal wired to a real PTY — you get color, cursor movement, and interactive programs (vim, htop, etc.) just as you would in a normal terminal. Each tab has a close button and can be split into multiple independent panes.
+
+**Aliases** defined in a profile (or globally in App Settings) are silently injected into the shell at launch so you can type them directly — no clicking required. Supports bash, zsh, and fish.
+
+**Variables** used in commands via `{{name}}` syntax can have pre-defined defaults in the profile's Variables section. If all variables have defaults, launch skips the prompt entirely.
 
 ### Under the hood
 
@@ -88,10 +92,13 @@ npm run dist
 ## Usage
 
 1. Click **New profile** in the sidebar
-2. Give it a name and add your commands
-3. Toggle **Stop on first error** if you want the run to abort on a non-zero exit
-4. Click **Launch** — output streams into the terminal panel on the right
-5. Use **New group** to bundle profiles and launch them all at once in separate tabs
+2. Give it a name and add your commands (use `{{varName}}` for dynamic values)
+3. Optionally add **Variables** with defaults so launch skips the prompt
+4. Optionally add **Aliases** that will be available to type directly in the shell
+5. Toggle **Stop on first error** if you want the run to abort on a non-zero exit
+6. Click **Launch** — output streams into the terminal panel on the right
+7. Use **New group** to bundle profiles and launch them all at once in separate tabs
+8. Click **App Settings** at the bottom of the sidebar to configure global aliases
 
 You can also launch a profile directly from the terminal:
 
@@ -109,7 +116,29 @@ termpad --cwd /path/to/project
 
 ## Changelog
 
-### Unreleased
+### v1.19.0
+
+- **Profile manager in separate window** — clicking ☰ in the terminal toolbar opens the profile manager in its own window; if already open, brings it to the front without interrupting the terminal
+- **Script mode variables** — `{{variable}}` placeholders in script mode commands now prompt correctly at launch and support pre-defined defaults, matching list mode behaviour
+- **Group launch script variables** — profiles using script mode inside a group now have their variables resolved before launch, same as list mode profiles
+- **Closeable tabs** — each terminal tab has an × button (visible on hover) to close it; closing the last tab opens a fresh one automatically
+
+### v1.18.0
+
+- **Profile variables section** — define `{{variable}}` names and optional default values directly in the profile editor; launch skips the prompt for any variable that has a default
+- **Global aliases** — App Settings (sidebar footer) hosts a global alias list injected into every profile's shell at launch; profile-level aliases take precedence on name conflicts
+- **Shell alias injection** — profile and global aliases are loaded silently via `bash --init-file`, `ZDOTDIR` (zsh), or `-C` (fish) so they work when typed directly in the terminal
+- **Closeable terminal tabs** — each tab has an × button that appears on hover; closing the last tab opens a fresh one automatically
+
+### v1.15.0
+
+- **Update banner: copy install command** — "Copy install command" button copies the one-liner to clipboard so updating is a single paste into any terminal
+
+### v1.14.0
+
+- **Update banner** — shows a notification bar when a newer version is available; prompts restart when update is downloaded (AppImage with FUSE) or directs to the install script (extracted mode)
+
+### v1.13.0
 
 - **YAML theme editor** — toggle between the swatch picker and a YAML editor to fine-tune any theme color; changes apply live to the terminal
 - **Custom themes** — save any YAML configuration as a named theme that appears in the swatch picker alongside built-in themes

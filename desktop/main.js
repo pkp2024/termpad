@@ -33,6 +33,16 @@ ipcMain.handle("window:open", (_event, path) => {
   createWindow(path);
 });
 
+let managerWindow = null;
+ipcMain.handle("manager:open", () => {
+  if (managerWindow && !managerWindow.isDestroyed()) {
+    managerWindow.focus();
+    return;
+  }
+  managerWindow = createWindow("/?manager=1");
+  managerWindow.on("closed", () => { managerWindow = null; });
+});
+
 function createWindow(path = "/") {
   const window = new BrowserWindow({
     width: 1280,
@@ -80,16 +90,37 @@ function createWindow(path = "/") {
   return window;
 }
 
-autoUpdater.on("update-downloaded", () => {
-  dialog.showMessageBox({
-    type: "info",
-    title: "Update ready",
-    message: "A new version of Termpad has been downloaded. Restart now to apply it?",
-    buttons: ["Restart", "Later"]
-  }).then(({ response }) => {
-    if (response === 0) autoUpdater.quitAndInstall();
-  });
+function notifyWindows(channel, ...args) {
+  BrowserWindow.getAllWindows().forEach(w => w.webContents.send(channel, ...args));
+}
+
+autoUpdater.on("update-available", (info) => {
+  notifyWindows("update:available", info.version);
 });
+
+autoUpdater.on("update-downloaded", () => {
+  notifyWindows("update:downloaded");
+});
+
+autoUpdater.on("error", (err) => {
+  console.error("Auto-updater:", err.message);
+});
+
+ipcMain.on("update:install", () => autoUpdater.quitAndInstall());
+
+async function checkForUpdateManually() {
+  try {
+    const res = await fetch("https://api.github.com/repos/pkp2024/termpad/releases/latest");
+    const { tag_name } = await res.json();
+    const latest = tag_name?.replace(/^v/, "");
+    const current = app.getVersion();
+    if (latest && latest !== current) {
+      notifyWindows("update:available", latest);
+    }
+  } catch {
+    // network issue, skip silently
+  }
+}
 
 app.whenReady().then(async () => {
   const { session } = require("electron");
@@ -107,18 +138,24 @@ app.whenReady().then(async () => {
     else if (!rawArgs[i].startsWith("-") && !profileName) { profileName = rawArgs[i]; }
   }
 
+  let mainWindow;
   if (cwdArg) {
-    createWindow(`/?openShell=${encodeURIComponent(cwdArg)}`);
+    mainWindow = createWindow(`/?openShell=${encodeURIComponent(cwdArg)}`);
   } else if (profileName) {
     const saved = readSavedProfiles();
     const profiles = saved?.profiles ?? [];
     const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
-    createWindow(profile ? `/?launchProfile=${encodeURIComponent(profile.id)}` : "/");
+    mainWindow = createWindow(profile ? `/?launchProfile=${encodeURIComponent(profile.id)}` : "/");
   } else {
-    createWindow();
+    mainWindow = createWindow();
   }
 
-  if (app.isPackaged) autoUpdater.checkForUpdates();
+  if (app.isPackaged) {
+    mainWindow.webContents.once("did-finish-load", () => {
+      checkForUpdateManually();
+      if (process.env.APPIMAGE) autoUpdater.checkForUpdates();
+    });
+  }
 });
 
 app.on("activate", () => {

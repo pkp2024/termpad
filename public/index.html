@@ -11,6 +11,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code&family=JetBrains+Mono&family=Source+Code+Pro&family=Ubuntu+Mono&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <div id="updateBanner" class="update-banner" hidden>
+      <span id="updateBannerText"></span>
+      <button id="updateInstallBtn" class="update-install-btn" type="button" hidden>Restart &amp; Install</button>
+      <button id="updateCopyBtn" class="update-install-btn" type="button" hidden>Copy install command</button>
+      <button id="updateBannerClose" class="icon-button compact-icon" type="button" aria-label="Dismiss">×</button>
+    </div>
     <main class="app-shell">
       <aside class="sidebar" aria-label="Profiles and groups">
         <div class="brand">
@@ -36,6 +42,10 @@
           </summary>
           <nav id="groupList" class="profile-list" aria-label="Profile groups"></nav>
         </details>
+
+        <div class="sidebar-footer">
+          <button id="appSettingsButton" class="sidebar-settings-btn" type="button">App Settings</button>
+        </div>
       </aside>
 
       <section class="workspace">
@@ -50,7 +60,6 @@
               <span aria-hidden="true">▶</span>
               Launch
             </button>
-            <button id="closeManagerButton" class="icon-button" type="button" aria-label="Close profile manager">×</button>
           </div>
         </header>
 
@@ -166,10 +175,59 @@
                 </div>
               </details>
 
+              <details class="editor-section">
+                <summary class="editor-section-header">
+                  <span>Variables</span>
+                  <button id="addVariableButton" class="icon-button compact-icon" type="button" aria-label="Add variable">+</button>
+                </summary>
+                <div class="editor-section-body">
+                  <p class="editor-section-hint">Define <code>{{variables}}</code> used in commands. If a default is set, launch skips the prompt for that variable.</p>
+                  <div class="alias-list-header">
+                    <span>Name</span>
+                    <span>Default value</span>
+                  </div>
+                  <div id="variableDefList" class="alias-list"></div>
+                </div>
+              </details>
+
+              <details class="editor-section">
+                <summary class="editor-section-header">
+                  <span>Aliases</span>
+                  <button id="addAliasButton" class="icon-button compact-icon" type="button" aria-label="Add alias">+</button>
+                </summary>
+                <div class="editor-section-body">
+                  <p class="editor-section-hint">Type the alias name directly in the terminal to run it (bash, zsh, and fish only). Use <code>{{variable}}</code> for dynamic values.</p>
+                  <div class="alias-list-header">
+                    <span>Alias</span>
+                    <span>Command</span>
+                  </div>
+                  <div id="aliasList" class="alias-list"></div>
+                </div>
+              </details>
+
               <div class="editor-actions">
                 <button id="duplicateProfileButton" class="ghost-button" type="button">Duplicate</button>
                 <button id="deleteProfileButton" class="danger-button" type="button">Delete</button>
               </div>
+
+            </div>
+
+            <div id="settingsFields" class="editor-fields" style="display:none">
+
+              <details class="editor-section" open>
+                <summary class="editor-section-header">
+                  <span>Global Aliases</span>
+                  <button id="addGlobalAliasButton" class="icon-button compact-icon" type="button" aria-label="Add global alias">+</button>
+                </summary>
+                <div class="editor-section-body">
+                  <p class="editor-section-hint">These aliases are injected into every profile's shell (bash, zsh, fish). Profile aliases take precedence if names conflict. Changes save automatically.</p>
+                  <div class="alias-list-header">
+                    <span>Alias</span>
+                    <span>Command</span>
+                  </div>
+                  <div id="globalAliasList" class="alias-list"></div>
+                </div>
+              </details>
 
             </div>
 
@@ -217,7 +275,7 @@
               <button id="restartShellButton" class="ghost-button compact" type="button">Restart shell</button>
               <button id="clearTerminalButton" class="ghost-button compact" type="button">Clear</button>
             </div>
-            <div id="terminalOutputWrapper" class="terminal-output-wrapper">
+<div id="terminalOutputWrapper" class="terminal-output-wrapper">
               <div id="terminalOutput" class="terminal-output" aria-label="Terminal"></div>
             </div>
           </section>

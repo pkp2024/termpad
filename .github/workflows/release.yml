@@ -43,3 +43,4 @@ jobs:
         with:
           files: ${{ matrix.artifact }}
           generate_release_notes: true
+          overwrite: true

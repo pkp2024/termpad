@@ -158,6 +158,14 @@ const elements = {
   saveProfileButton: document.querySelector("#saveProfileButton"),
   launchProfileButton: document.querySelector("#launchProfileButton"),
   addCommandButton: document.querySelector("#addCommandButton"),
+  addAliasButton: document.querySelector("#addAliasButton"),
+  aliasList: document.querySelector("#aliasList"),
+  addVariableButton: document.querySelector("#addVariableButton"),
+  variableDefList: document.querySelector("#variableDefList"),
+  addGlobalAliasButton: document.querySelector("#addGlobalAliasButton"),
+  globalAliasList: document.querySelector("#globalAliasList"),
+  settingsFields: document.querySelector("#settingsFields"),
+  appSettingsButton: document.querySelector("#appSettingsButton"),
   duplicateProfileButton: document.querySelector("#duplicateProfileButton"),
   deleteProfileButton: document.querySelector("#deleteProfileButton"),
   deleteGroupButton: document.querySelector("#deleteGroupButton"),
@@ -214,7 +222,8 @@ function normalizeSavedData(saved) {
     profiles: normalizedProfiles,
     groups,
     customThemes: Array.isArray(saved?.customThemes) ? saved.customThemes : [],
-    recentThemeIds: Array.isArray(saved?.recentThemeIds) ? saved.recentThemeIds : []
+    recentThemeIds: Array.isArray(saved?.recentThemeIds) ? saved.recentThemeIds : [],
+    globalAliases: Array.isArray(saved?.globalAliases) ? saved.globalAliases : []
   };
 }
 
@@ -236,6 +245,7 @@ async function initProfiles() {
       state.groups = saved.groups;
       state.customThemes = saved.customThemes;
       state.recentThemeIds = saved.recentThemeIds;
+      state.globalAliases = saved.globalAliases;
     } catch {}
   }
 }
@@ -245,7 +255,8 @@ function persistProfiles() {
     profiles: state.profiles,
     groups: state.groups,
     customThemes: state.customThemes,
-    recentThemeIds: state.recentThemeIds
+    recentThemeIds: state.recentThemeIds,
+    globalAliases: state.globalAliases
   };
   localStorage.setItem(storageKey, JSON.stringify(saved));
   window.electronAPI?.writeProfiles(saved).catch(() => {});
@@ -403,7 +414,17 @@ function profileFromForm() {
     scriptContent: elements.scriptTextarea.value.trim(),
     commands: [...document.querySelectorAll("[data-command-input]")]
       .map((input) => input.value.trim())
-      .filter(Boolean)
+      .filter(Boolean),
+    variables: [...elements.variableDefList.querySelectorAll(".variable-def-row")].map(row => ({
+      id: row.dataset.varId,
+      name: row.querySelector("[data-var-name]").value.trim(),
+      defaultValue: row.querySelector("[data-var-default]").value
+    })).filter(v => v.name),
+    aliases: [...elements.aliasList.querySelectorAll(".alias-row")].map(row => ({
+      id: row.dataset.aliasId,
+      name: row.querySelector("[data-alias-name]").value.trim(),
+      command: row.querySelector("[data-alias-cmd]").value.trim()
+    })).filter(a => a.name && a.command)
   };
 }
 
@@ -425,6 +446,7 @@ function saveActiveProfile({ rerender = true } = {}) {
     elements.activeProfileName.textContent = nextProfile.name;
     renderProfileList();
   }
+  const activeT = focusedTab();
 }
 
 function groupFromForm() {
@@ -529,6 +551,127 @@ function renderCommandInputs(profile) {
     elements.commandList.append(row);
   });
 }
+
+function addAliasRow(alias = {}) {
+  const row = document.createElement("div");
+  row.className = "alias-row";
+  row.dataset.aliasId = alias.id || crypto.randomUUID();
+  const nameInput = document.createElement("input");
+  nameInput.className = "alias-name-input";
+  nameInput.placeholder = "gch";
+  nameInput.value = alias.name ?? "";
+  nameInput.autocomplete = "off";
+  nameInput.dataset.aliasName = "";
+  const cmdInput = document.createElement("input");
+  cmdInput.className = "alias-cmd-input";
+  cmdInput.placeholder = "git checkout {{branch}}";
+  cmdInput.value = alias.command ?? "";
+  cmdInput.autocomplete = "off";
+  cmdInput.dataset.aliasCmd = "";
+  const del = document.createElement("button");
+  del.className = "icon-button compact-icon";
+  del.type = "button";
+  del.setAttribute("aria-label", "Remove alias");
+  del.textContent = "×";
+  del.addEventListener("click", () => { row.remove(); saveActiveProfileDebounced(); });
+  nameInput.addEventListener("input", saveActiveProfileDebounced);
+  cmdInput.addEventListener("input", saveActiveProfileDebounced);
+  row.append(nameInput, cmdInput, del);
+  elements.aliasList.append(row);
+  return row;
+}
+
+function renderAliasInputs(profile) {
+  elements.aliasList.innerHTML = "";
+  for (const alias of (profile.aliases ?? [])) addAliasRow(alias);
+}
+
+function addVariableRow(variable = {}) {
+  const row = document.createElement("div");
+  row.className = "variable-def-row";
+  row.dataset.varId = variable.id || crypto.randomUUID();
+
+  const nameInput = document.createElement("input");
+  nameInput.className = "variable-def-name";
+  nameInput.placeholder = "branch";
+  nameInput.value = variable.name ?? "";
+  nameInput.autocomplete = "off";
+  nameInput.dataset.varName = "";
+
+  const defaultInput = document.createElement("input");
+  defaultInput.className = "variable-def-default";
+  defaultInput.placeholder = "default value (optional)";
+  defaultInput.value = variable.defaultValue ?? "";
+  defaultInput.autocomplete = "off";
+  defaultInput.dataset.varDefault = "";
+
+  const del = document.createElement("button");
+  del.className = "icon-button compact-icon";
+  del.type = "button";
+  del.setAttribute("aria-label", "Remove variable");
+  del.textContent = "×";
+  del.addEventListener("click", () => { row.remove(); saveActiveProfileDebounced(); });
+  nameInput.addEventListener("input", saveActiveProfileDebounced);
+  defaultInput.addEventListener("input", saveActiveProfileDebounced);
+
+  row.append(nameInput, defaultInput, del);
+  elements.variableDefList.append(row);
+  return row;
+}
+
+function renderVariableInputs(profile) {
+  elements.variableDefList.innerHTML = "";
+  for (const v of (profile.variables ?? [])) addVariableRow(v);
+}
+
+function saveGlobalAliases() {
+  state.globalAliases = [...document.querySelectorAll("#globalAliasList .alias-row")].map(row => ({
+    id: row.dataset.aliasId,
+    name: row.querySelector("[data-alias-name]").value.trim(),
+    command: row.querySelector("[data-alias-cmd]").value.trim()
+  })).filter(a => a.name && a.command);
+  persistProfiles();
+}
+
+function saveGlobalAliasesDebounced() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveGlobalAliases, 400);
+}
+
+function addGlobalAliasRow(alias = {}) {
+  const row = document.createElement("div");
+  row.className = "alias-row";
+  row.dataset.aliasId = alias.id || crypto.randomUUID();
+  const nameInput = document.createElement("input");
+  nameInput.className = "alias-name-input";
+  nameInput.placeholder = "gst";
+  nameInput.value = alias.name ?? "";
+  nameInput.autocomplete = "off";
+  nameInput.dataset.aliasName = "";
+  const cmdInput = document.createElement("input");
+  cmdInput.className = "alias-cmd-input";
+  cmdInput.placeholder = "git status";
+  cmdInput.value = alias.command ?? "";
+  cmdInput.autocomplete = "off";
+  cmdInput.dataset.aliasCmd = "";
+  const del = document.createElement("button");
+  del.className = "icon-button compact-icon";
+  del.type = "button";
+  del.setAttribute("aria-label", "Remove alias");
+  del.textContent = "×";
+  del.addEventListener("click", () => { row.remove(); saveGlobalAliases(); });
+  nameInput.addEventListener("input", saveGlobalAliasesDebounced);
+  cmdInput.addEventListener("input", saveGlobalAliasesDebounced);
+  row.append(nameInput, cmdInput, del);
+  elements.globalAliasList.append(row);
+  return row;
+}
+
+function renderGlobalAliasList() {
+  elements.globalAliasList.innerHTML = "";
+  for (const alias of (state.globalAliases ?? [])) addGlobalAliasRow(alias);
+}
+
 
 const SWATCHES_SLOT_COUNT = 4;
 
@@ -761,9 +904,20 @@ function renderEditor() {
   renderGroupList();
 
   const isGroup = state.activeEditor === "group";
-  elements.activeEditorType.textContent = isGroup ? "Group" : "Profile";
-  elements.profileFields.style.display = isGroup ? "none" : "flex";
+  const isSettings = state.activeEditor === "settings";
+  elements.activeEditorType.textContent = isSettings ? "Settings" : isGroup ? "Group" : "Profile";
+  elements.profileFields.style.display = isGroup || isSettings ? "none" : "flex";
   elements.groupFields.style.display = isGroup ? "flex" : "none";
+  elements.settingsFields.style.display = isSettings ? "flex" : "none";
+  elements.saveProfileButton.style.display = isSettings ? "none" : "";
+  elements.launchProfileButton.style.display = isSettings ? "none" : "";
+
+  if (isSettings) {
+    elements.activeProfileName.textContent = "App Settings";
+    renderGlobalAliasList();
+    return;
+  }
+
   elements.launchProfileButton.disabled = isGroup && !activeGroup()?.profileIds.length;
   elements.launchProfileButton.lastChild.textContent = isGroup ? " Launch group" : " Launch";
 
@@ -800,6 +954,31 @@ function renderEditor() {
   setCommandMode(commandMode, { sync: false });
   elements.scriptTextarea.value = profile.scriptContent ?? "";
   renderCommandInputs(profile);
+  renderVariableInputs(profile);
+  renderAliasInputs(profile);
+}
+
+function closeTab(id) {
+  const idx = state.tabs.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  const tab = state.tabs[idx];
+
+  if (tab.shellId) fetch(`/api/shells/${tab.shellId}/close`, { method: "POST" }).catch(() => {});
+  tab.shellEventSource?.close();
+  tab.eventSource?.close();
+  tab.terminal.dispose();
+  tab.container.remove();
+
+  state.tabs.splice(idx, 1);
+
+  if (state.tabs.length === 0) {
+    createTerminalTab();
+  } else if (state.activeTabId === id) {
+    const next = state.tabs[Math.min(idx, state.tabs.length - 1)];
+    setActiveTab(next.id);
+  } else {
+    renderTabs();
+  }
 }
 
 function renderTabs() {
@@ -807,14 +986,25 @@ function renderTabs() {
 
   state.tabs.forEach((tab) => {
     tab.container.classList.toggle("active", tab.id === state.activeTabId);
-    const button = document.createElement("button");
-    button.className = `terminal-tab${tab.id === state.activeTabId ? " active" : ""}`;
-    button.type = "button";
-    button.role = "tab";
-    button.innerHTML = "<span></span>";
-    button.querySelector("span").textContent = tab.title;
-    button.addEventListener("click", () => setActiveTab(tab.id));
-    elements.terminalTabs.append(button);
+
+    const item = document.createElement("div");
+    item.className = `terminal-tab${tab.id === state.activeTabId ? " active" : ""}`;
+    item.role = "tab";
+
+    const label = document.createElement("span");
+    label.className = "terminal-tab-label";
+    label.textContent = tab.title;
+    label.addEventListener("click", () => setActiveTab(tab.id));
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "terminal-tab-close";
+    closeBtn.type = "button";
+    closeBtn.setAttribute("aria-label", "Close tab");
+    closeBtn.textContent = "×";
+    closeBtn.addEventListener("click", (e) => { e.stopPropagation(); closeTab(tab.id); });
+
+    item.append(label, closeBtn);
+    elements.terminalTabs.append(item);
   });
 
   const ft = focusedTab();
@@ -1182,7 +1372,7 @@ async function resizePty(tab) {
   }).catch(() => {});
 }
 
-async function startInteractiveShell(tab = activeTab(), { clear = false, cwd = null } = {}) {
+async function startInteractiveShell(tab = activeTab(), { clear = false, cwd = null, aliases = [] } = {}) {
   if (!tab) return;
 
   if (tab.shellStarting) return tab.shellStarting;
@@ -1207,7 +1397,8 @@ async function startInteractiveShell(tab = activeTab(), { clear = false, cwd = n
         body: JSON.stringify({
           cwd: cwd ?? profile?.cwd ?? "",
           cols: tab.terminal.cols,
-          rows: tab.terminal.rows
+          rows: tab.terminal.rows,
+          aliases
         })
       });
 
@@ -1329,7 +1520,7 @@ function substituteVariables(commands, values) {
   );
 }
 
-function showVariableModal(vars, profileName = null) {
+function showVariableModal(vars, profileName = null, defaults = {}) {
   return new Promise((resolve) => {
     elements.variableModal.querySelector("h3").textContent =
       profileName ? `Variables — ${profileName}` : "Profile variables";
@@ -1342,6 +1533,7 @@ function showVariableModal(vars, profileName = null) {
       const input = document.createElement("input");
       input.name = name;
       input.autocomplete = "off";
+      input.value = defaults[name] ?? "";
       label.append(nameSpan, input);
       elements.variableInputs.append(label);
     }
@@ -1426,23 +1618,39 @@ async function launchWithSession(profile, tab, commands) {
 
 // ── Launch ────────────────────────────────────────────────────────────────────
 
-async function launchProfileInTab(profile, tab = activeTab(), resolvedCommands = null) {
+async function launchProfileInTab(profile, tab = activeTab(), resolvedCommands = null, resolvedScript = null) {
   if (!profile || !tab) return;
 
   let commands = resolvedCommands;
 
-  if (!commands) {
-    const vars = extractVariables(profile.commands);
+  if (!commands && !resolvedScript) {
+    const isScript = profile.commandMode === "script" && profile.scriptContent;
+    const rawForVars = isScript ? [profile.scriptContent] : profile.commands;
+    const vars = extractVariables(rawForVars);
     if (vars.length > 0) {
-      const values = await showVariableModal(vars, profile.name);
-      if (values === null) return;
-      commands = substituteVariables(profile.commands, values);
+      const defaults = Object.fromEntries(
+        (profile.variables ?? []).filter(v => v.name).map(v => [v.name, v.defaultValue ?? ""])
+      );
+      const needsInput = vars.filter(v => !defaults[v] && defaults[v] !== "0");
+      let values;
+      if (needsInput.length > 0) {
+        values = await showVariableModal(vars, profile.name, defaults);
+        if (values === null) return;
+      } else {
+        values = defaults;
+      }
+      if (isScript) {
+        resolvedScript = substituteVariables([profile.scriptContent], values)[0];
+      } else {
+        commands = substituteVariables(profile.commands, values);
+      }
     } else {
       commands = profile.commands;
     }
   }
 
   tab.title = profile.name;
+  tab.profileId = profile.id;
   tab.profileCwd = profile.cwd;
   applyProfileAppearance(tab, profile);
   renderTabs();
@@ -1459,15 +1667,20 @@ async function launchProfileInTab(profile, tab = activeTab(), resolvedCommands =
   updateTabStatus(tab, "Starting...");
   renderTabs();
 
-  await startInteractiveShell(tab, { cwd: profile.cwd });
+  const globalStatic = (state.globalAliases ?? []).filter(a => a.name && a.command && !a.command.includes("{{"));
+  const profileStatic = (profile.aliases ?? []).filter(a => a.name && a.command && !a.command.includes("{{"));
+  const profileNames = new Set(profileStatic.map(a => a.name));
+  const staticAliases = [...globalStatic.filter(a => !profileNames.has(a.name)), ...profileStatic];
+  await startInteractiveShell(tab, { cwd: profile.cwd, aliases: staticAliases });
   if (!tab.shellId) return;
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   if (!tab.shellId) return;
 
-  const input = profile.commandMode === "script" && profile.scriptContent
-    ? profile.scriptContent.split("\n").filter(l => l.trim() && !l.trim().startsWith("#")).join("\n") + "\n"
+  const scriptContent = resolvedScript ?? (profile.commandMode === "script" ? profile.scriptContent : null);
+  const input = scriptContent
+    ? scriptContent.split("\n").filter(l => l.trim() && !l.trim().startsWith("#")).join("\n") + "\n"
     : commands.join("\n") + "\n";
   await fetch(`/api/shells/${tab.shellId}/input`, {
     method: "POST",
@@ -1488,14 +1701,33 @@ async function launchGroup(group) {
 
   // Resolve variables for each profile upfront before opening any tabs
   const resolvedCommandsList = [];
+  const resolvedScriptList = [];
   for (const profile of profiles) {
-    const vars = extractVariables(profile.commands);
+    const isScript = profile.commandMode === "script" && profile.scriptContent;
+    const rawForVars = isScript ? [profile.scriptContent] : profile.commands;
+    const vars = extractVariables(rawForVars);
     if (vars.length > 0) {
-      const values = await showVariableModal(vars, profile.name);
-      if (values === null) return;
-      resolvedCommandsList.push(substituteVariables(profile.commands, values));
+      const defaults = Object.fromEntries(
+        (profile.variables ?? []).filter(v => v.name).map(v => [v.name, v.defaultValue ?? ""])
+      );
+      const needsInput = vars.filter(v => !defaults[v] && defaults[v] !== "0");
+      let values;
+      if (needsInput.length > 0) {
+        values = await showVariableModal(vars, profile.name, defaults);
+        if (values === null) return;
+      } else {
+        values = defaults;
+      }
+      if (isScript) {
+        resolvedCommandsList.push(null);
+        resolvedScriptList.push(substituteVariables([profile.scriptContent], values)[0]);
+      } else {
+        resolvedCommandsList.push(substituteVariables(profile.commands, values));
+        resolvedScriptList.push(null);
+      }
     } else {
-      resolvedCommandsList.push(profile.commands);
+      resolvedCommandsList.push(isScript ? null : profile.commands);
+      resolvedScriptList.push(null);
     }
   }
 
@@ -1505,10 +1737,11 @@ async function launchGroup(group) {
     const tab = createTerminalTab({ title: profile.name, startShell: false });
     if (index === 0) firstTabId = tab.id;
     const resolved = resolvedCommandsList[index];
+    const resolvedScript = resolvedScriptList[index];
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         tab.fitAddon.fit();
-        launchProfileInTab(profile, tab, resolved);
+        launchProfileInTab(profile, tab, resolved, resolvedScript);
       });
     });
   });
@@ -1664,6 +1897,29 @@ elements.addCommandButton.addEventListener("click", (e) => {
   inputs[inputs.length - 1]?.focus();
 });
 
+elements.addVariableButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const row = addVariableRow();
+  row.querySelector("[data-var-name]").focus();
+});
+
+elements.addAliasButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const row = addAliasRow();
+  row.querySelector("[data-alias-name]").focus();
+});
+
+elements.addGlobalAliasButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const row = addGlobalAliasRow();
+  row.querySelector("[data-alias-name]").focus();
+});
+
+elements.appSettingsButton.addEventListener("click", () => {
+  state.activeEditor = "settings";
+  renderEditor();
+});
+
 elements.duplicateProfileButton.addEventListener("click", () => {
   saveActiveProfile();
   const profile = activeProfile();
@@ -1703,18 +1959,15 @@ elements.deleteGroupButton.addEventListener("click", () => {
 elements.launchProfileButton.addEventListener("click", openActiveInNewWindow);
 elements.newTerminalTabButton.addEventListener("click", () => createTerminalTab());
 
-document.querySelector("#closeManagerButton").addEventListener("click", () => {
-  document.body.classList.remove("mode-manager");
-  document.body.classList.add("mode-terminal");
-  if (!state.tabs.length) createTerminalTab();
-  else activeTab()?.terminal.focus();
-  scheduleFitActiveTerminal();
-});
 
 document.querySelector("#toggleManagerButton").addEventListener("click", () => {
-  document.body.classList.remove("mode-terminal");
-  document.body.classList.add("mode-manager");
-  renderEditor();
+  if (window.electronAPI?.openManager) {
+    window.electronAPI.openManager();
+  } else {
+    document.body.classList.remove("mode-terminal");
+    document.body.classList.add("mode-manager");
+    renderEditor();
+  }
 });
 
 elements.clearTerminalButton.addEventListener("click", () => {
@@ -1756,8 +2009,12 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
   const launchProfileId = params.get("launchProfile");
   const launchGroupId = params.get("launchGroup");
   const openShellCwd = params.get("openShell");
+  const managerOnly = params.get("manager") === "1";
 
-  if (openShellCwd) {
+  if (managerOnly) {
+    document.body.classList.add("mode-manager");
+    renderEditor();
+  } else if (openShellCwd) {
     document.body.classList.add("mode-terminal");
     const tab = createTerminalTab({ title: openShellCwd.split("/").filter(Boolean).pop() || "Terminal", startShell: false });
     requestAnimationFrame(() => {
@@ -1799,3 +2056,44 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
     renderEditor();
   }
 })();
+
+// Update banner
+(function () {
+  const api = window.electronAPI;
+  if (!api?.onUpdateAvailable) return;
+
+  const banner = document.getElementById("updateBanner");
+  const bannerText = document.getElementById("updateBannerText");
+  const installBtn = document.getElementById("updateInstallBtn");
+  const copyBtn = document.getElementById("updateCopyBtn");
+  const closeBtn = document.getElementById("updateBannerClose");
+
+  const INSTALL_CMD = "curl -fsSL https://raw.githubusercontent.com/pkp2024/termpad/main/install.sh | bash";
+
+  function showBanner(text, { showInstall = false, showCopy = false } = {}) {
+    bannerText.textContent = text;
+    installBtn.hidden = !showInstall;
+    copyBtn.hidden = !showCopy;
+    banner.hidden = false;
+  }
+
+  api.onUpdateAvailable((version) => {
+    showBanner(`Termpad v${version} is available.`, { showCopy: true });
+  });
+
+  api.onUpdateDownloaded(() => {
+    showBanner("Update downloaded and ready to install.", { showInstall: true });
+  });
+
+  installBtn.addEventListener("click", () => api.installUpdate());
+
+  copyBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(INSTALL_CMD).then(() => {
+      const prev = copyBtn.textContent;
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => { copyBtn.textContent = prev; }, 2000);
+    });
+  });
+
+  closeBtn.addEventListener("click", () => { banner.hidden = true; });
+}());
