@@ -452,7 +452,8 @@ export function createAppServer() {
     try {
       const body = await readFile(filePath);
       res.writeHead(200, {
-        "content-type": contentTypes[extname(filePath)] || "application/octet-stream"
+        "content-type": contentTypes[extname(filePath)] || "application/octet-stream",
+        "cache-control": "no-cache"
       });
       res.end(body);
     } catch {
