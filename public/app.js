@@ -1799,3 +1799,35 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
     renderEditor();
   }
 })();
+
+// Update banner
+(function () {
+  const api = window.electronAPI;
+  if (!api?.onUpdateAvailable) return;
+
+  const banner = document.getElementById("updateBanner");
+  const bannerText = document.getElementById("updateBannerText");
+  const installBtn = document.getElementById("updateInstallBtn");
+  const closeBtn = document.getElementById("updateBannerClose");
+
+  function showBanner(text, { showInstall = false } = {}) {
+    bannerText.textContent = text;
+    installBtn.hidden = !showInstall;
+    banner.hidden = false;
+  }
+
+  api.onUpdateAvailable((version) => {
+    showBanner(`Termpad v${version} is available — downloading in the background…`);
+  });
+
+  api.onUpdateDownloaded(() => {
+    showBanner("Update downloaded and ready to install.", { showInstall: true });
+  });
+
+  api.onUpdateError(() => {
+    showBanner("A new version is available — re-run the install script to update.");
+  });
+
+  installBtn.addEventListener("click", () => api.installUpdate());
+  closeBtn.addEventListener("click", () => { banner.hidden = true; });
+}());

@@ -80,16 +80,24 @@ function createWindow(path = "/") {
   return window;
 }
 
-autoUpdater.on("update-downloaded", () => {
-  dialog.showMessageBox({
-    type: "info",
-    title: "Update ready",
-    message: "A new version of Termpad has been downloaded. Restart now to apply it?",
-    buttons: ["Restart", "Later"]
-  }).then(({ response }) => {
-    if (response === 0) autoUpdater.quitAndInstall();
-  });
+function notifyWindows(channel, ...args) {
+  BrowserWindow.getAllWindows().forEach(w => w.webContents.send(channel, ...args));
+}
+
+autoUpdater.on("update-available", (info) => {
+  notifyWindows("update:available", info.version);
 });
+
+autoUpdater.on("update-downloaded", () => {
+  notifyWindows("update:downloaded");
+});
+
+autoUpdater.on("error", (err) => {
+  console.error("Auto-updater:", err.message);
+  notifyWindows("update:error");
+});
+
+ipcMain.on("update:install", () => autoUpdater.quitAndInstall());
 
 app.whenReady().then(async () => {
   const { session } = require("electron");
