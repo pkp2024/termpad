@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="pkp2024/warp-like"
+REPO="pkp2024/termpad"
 APP_NAME="termpad"
 
 RED='\033[0;31m'

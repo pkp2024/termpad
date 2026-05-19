@@ -34,7 +34,7 @@ Profiles are stored in your OS user-data directory (`~/.config/Termpad/profiles.
 ### Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pkp2024/warp-like/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pkp2024/termpad/main/install.sh | bash
 ```
 
 - Downloads the latest AppImage, installs it to `~/.local/bin/`
@@ -54,7 +54,7 @@ termpad
 ### macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pkp2024/warp-like/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pkp2024/termpad/main/install.sh | bash
 ```
 
 - Downloads the latest `.dmg` and copies `Termpad.app` to `/Applications/`
@@ -72,7 +72,7 @@ open "/Applications/Termpad.app"
 **Prerequisites:** Node.js 18+, npm
 
 ```bash
-git clone https://github.com/pkp2024/warp-like.git
+git clone https://github.com/pkp2024/termpad.git
 cd warp-like
 npm install
 
