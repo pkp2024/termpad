@@ -14,17 +14,23 @@ function profilesPath() {
   return join(app.getPath("userData"), "profiles.json");
 }
 
-ipcMain.handle("profiles:read", () => {
+function readSavedProfiles() {
   try {
     return JSON.parse(readFileSync(profilesPath(), "utf8"));
   } catch {
     return null;
   }
-});
+}
+
+ipcMain.handle("profiles:read", () => readSavedProfiles());
 
 ipcMain.handle("profiles:write", (_event, profiles) => {
   writeFileSync(profilesPath(), JSON.stringify(profiles));
   return true;
+});
+
+ipcMain.handle("window:open", (_event, path) => {
+  createWindow(path);
 });
 
 function createWindow(path = "/") {
@@ -86,10 +92,32 @@ autoUpdater.on("update-downloaded", () => {
 });
 
 app.whenReady().then(async () => {
+  const { session } = require("electron");
+  if (!app.isPackaged) await session.defaultSession.clearCache();
   const serverInfo = await startServer({ port: 0, appRoot: app.getAppPath() });
   appServer = serverInfo.server;
   serverUrl = serverInfo.url;
-  createWindow();
+
+  const rawArgs = process.argv.slice(app.isPackaged ? 1 : 2);
+  let cwdArg = null;
+  let profileName = null;
+  for (let i = 0; i < rawArgs.length; i++) {
+    if (rawArgs[i] === "--cwd" && rawArgs[i + 1]) { cwdArg = rawArgs[++i]; }
+    else if (rawArgs[i].startsWith("--cwd=")) { cwdArg = rawArgs[i].slice(6); }
+    else if (!rawArgs[i].startsWith("-") && !profileName) { profileName = rawArgs[i]; }
+  }
+
+  if (cwdArg) {
+    createWindow(`/?openShell=${encodeURIComponent(cwdArg)}`);
+  } else if (profileName) {
+    const saved = readSavedProfiles();
+    const profiles = saved?.profiles ?? [];
+    const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
+    createWindow(profile ? `/?launchProfile=${encodeURIComponent(profile.id)}` : "/");
+  } else {
+    createWindow();
+  }
+
   if (app.isPackaged) autoUpdater.checkForUpdates();
 });
 

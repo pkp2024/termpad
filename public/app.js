@@ -629,10 +629,12 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
     terminal,
     fitAddon,
     shellId: null,
+    shellStarting: null,
     shellEventSource: null,
     activeSessionId: null,
     eventSource: null,
     profileSessionRunning: false,
+    profileCwd: null,
   };
 
   terminal.onData((data) => {
@@ -682,10 +684,12 @@ function createSplitPane() {
     terminal,
     fitAddon,
     shellId: null,
+    shellStarting: null,
     shellEventSource: null,
     activeSessionId: null,
     eventSource: null,
-    profileSessionRunning: false
+    profileSessionRunning: false,
+    profileCwd: null,
   };
 
   terminal.onData(data => {
@@ -941,6 +945,8 @@ async function resizePty(tab) {
 async function startInteractiveShell(tab = activeTab(), { clear = false, cwd = null } = {}) {
   if (!tab) return;
 
+  if (tab.shellStarting) return tab.shellStarting;
+
   if (tab.shellId) {
     await fetch(`/api/shells/${tab.shellId}/close`, { method: "POST" }).catch(() => {});
   }
@@ -952,33 +958,42 @@ async function startInteractiveShell(tab = activeTab(), { clear = false, cwd = n
   }
 
   const profile = activeProfile();
-  const response = await fetch("/api/shells", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      cwd: cwd ?? profile?.cwd ?? "",
-      cols: tab.terminal.cols,
-      rows: tab.terminal.rows
-    })
-  });
 
-  if (!response.ok) {
-    const error = await response.json();
-    tab.terminal.write(`${error.error || "Unable to start shell"}\r\n`);
-    updateTabStatus(tab, "Shell failed");
-    return;
-  }
+  tab.shellStarting = (async () => {
+    try {
+      const response = await fetch("/api/shells", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          cwd: cwd ?? profile?.cwd ?? "",
+          cols: tab.terminal.cols,
+          rows: tab.terminal.rows
+        })
+      });
 
-  const shell = await response.json();
-  tab.shellId = shell.id;
-  updateTabStatus(tab, `Bash ready: ${shell.cwd}`);
+      if (!response.ok) {
+        const error = await response.json();
+        tab.terminal.write(`${error.error || "Unable to start shell"}\r\n`);
+        updateTabStatus(tab, "Shell failed");
+        return;
+      }
 
-  tab.shellEventSource = new EventSource(`/api/shells/${shell.id}/events`);
-  tab.shellEventSource.onmessage = (message) => handleShellEvent(tab, JSON.parse(message.data));
-  tab.shellEventSource.onerror = () => {
-    updateTabStatus(tab, "Shell connection closed");
-    tab.shellEventSource?.close();
-  };
+      const shell = await response.json();
+      tab.shellId = shell.id;
+      updateTabStatus(tab, `Bash ready: ${shell.cwd}`);
+
+      tab.shellEventSource = new EventSource(`/api/shells/${shell.id}/events`);
+      tab.shellEventSource.onmessage = (message) => handleShellEvent(tab, JSON.parse(message.data));
+      tab.shellEventSource.onerror = () => {
+        updateTabStatus(tab, "Shell connection closed");
+        tab.shellEventSource?.close();
+      };
+    } finally {
+      tab.shellStarting = null;
+    }
+  })();
+
+  return tab.shellStarting;
 }
 
 function handleShellEvent(tab, event) {
@@ -997,6 +1012,8 @@ function handleShellEvent(tab, event) {
 async function sendTerminalInput(tab, input) {
   if (!tab.profileSessionRunning && !tab.shellId) {
     await startInteractiveShell(tab);
+  } else if (tab.shellStarting) {
+    await tab.shellStarting;
   }
 
   const target = tab.profileSessionRunning && tab.activeSessionId
@@ -1024,19 +1041,27 @@ function updateTabStatus(tab, status) {
   }
 }
 
+function openInNewWindow(path) {
+  if (window.electronAPI?.openWindow) {
+    window.electronAPI.openWindow(path);
+  } else {
+    window.open(path, "_blank");
+  }
+}
+
 function openActiveInNewWindow() {
   saveCurrentEditor();
 
   if (state.activeEditor === "group") {
     const group = activeGroup();
     if (!group?.profileIds.length) return;
-    window.open(`/?launchGroup=${encodeURIComponent(group.id)}`, "_blank");
+    openInNewWindow(`/?launchGroup=${encodeURIComponent(group.id)}`);
     return;
   }
 
   const profile = activeProfile();
   if (profile) {
-    window.open(`/?launchProfile=${encodeURIComponent(profile.id)}`, "_blank");
+    openInNewWindow(`/?launchProfile=${encodeURIComponent(profile.id)}`);
   }
 }
 
@@ -1125,12 +1150,13 @@ function handleTerminalSessionEvent(tab, event) {
     tab.eventSource?.close();
     tab.eventSource = null;
     renderTabs();
-    startInteractiveShell(tab);
+    startInteractiveShell(tab, { cwd: tab.profileCwd });
     tab.terminal.focus();
   }
 }
 
 async function launchWithSession(profile, tab, commands) {
+  tab.profileCwd = profile.cwd;
   const res = await fetch("/api/sessions", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -1177,6 +1203,7 @@ async function launchProfileInTab(profile, tab = activeTab(), resolvedCommands =
   }
 
   tab.title = profile.name;
+  tab.profileCwd = profile.cwd;
   applyProfileAppearance(tab, profile);
   renderTabs();
 
@@ -1193,6 +1220,10 @@ async function launchProfileInTab(profile, tab = activeTab(), resolvedCommands =
   renderTabs();
 
   await startInteractiveShell(tab, { cwd: profile.cwd });
+  if (!tab.shellId) return;
+
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
   if (!tab.shellId) return;
 
   const input = commands.join("\n") + "\n";
@@ -1254,7 +1285,7 @@ function handleSessionEvent(tab, event) {
       tab.profileSessionRunning = false;
       tab.eventSource?.close();
       renderTabs();
-      startInteractiveShell(tab);
+      startInteractiveShell(tab, { cwd: tab.profileCwd });
       tab.terminal.focus();
     }
   }
@@ -1363,6 +1394,20 @@ elements.deleteGroupButton.addEventListener("click", () => {
 elements.launchProfileButton.addEventListener("click", openActiveInNewWindow);
 elements.newTerminalTabButton.addEventListener("click", () => createTerminalTab());
 
+document.querySelector("#closeManagerButton").addEventListener("click", () => {
+  document.body.classList.remove("mode-manager");
+  document.body.classList.add("mode-terminal");
+  if (!state.tabs.length) createTerminalTab();
+  else activeTab()?.terminal.focus();
+  scheduleFitActiveTerminal();
+});
+
+document.querySelector("#toggleManagerButton").addEventListener("click", () => {
+  document.body.classList.remove("mode-terminal");
+  document.body.classList.add("mode-manager");
+  renderEditor();
+});
+
 elements.clearTerminalButton.addEventListener("click", () => {
   const tab = focusedTab();
   tab?.terminal.clear();
@@ -1401,8 +1446,18 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
   const params = new URLSearchParams(window.location.search);
   const launchProfileId = params.get("launchProfile");
   const launchGroupId = params.get("launchGroup");
+  const openShellCwd = params.get("openShell");
 
-  if (launchGroupId) {
+  if (openShellCwd) {
+    document.body.classList.add("mode-terminal");
+    const tab = createTerminalTab({ title: openShellCwd.split("/").filter(Boolean).pop() || "Terminal", startShell: false });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        tab.fitAddon.fit();
+        startInteractiveShell(tab, { cwd: openShellCwd });
+      });
+    });
+  } else if (launchGroupId) {
     document.body.classList.add("mode-terminal");
     const group = state.groups.find((item) => item.id === launchGroupId);
     if (group && profilesForGroup(group).length) {

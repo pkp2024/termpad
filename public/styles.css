@@ -749,6 +749,21 @@ body.mode-manager .editor-terminal-layout {
   grid-template-columns: 1fr;
 }
 
+/* hide toggle-manager button when profile manager is already visible */
+body.mode-manager #toggleManagerButton {
+  display: none;
+}
+
+/* hide close-manager button when in terminal-only mode */
+body.mode-terminal #closeManagerButton {
+  display: none;
+}
+
+/* hide close-manager button by default (only show in manager mode) */
+#closeManagerButton {
+  margin-left: auto;
+}
+
 /* ── Terminal window (no sidebar / editor) ── */
 body.mode-terminal .sidebar {
   display: none;
