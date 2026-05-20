@@ -120,7 +120,6 @@ const elements = {
   profileList: document.querySelector("#profileList"),
   groupList: document.querySelector("#groupList"),
   activeEditorType: document.querySelector("#activeEditorType"),
-  activeProfileName: document.querySelector("#activeProfileName"),
   profileFields: document.querySelector("#profileFields"),
   groupFields: document.querySelector("#groupFields"),
   profileNameInput: document.querySelector("#profileNameInput"),
@@ -162,6 +161,9 @@ const elements = {
   aliasList: document.querySelector("#aliasList"),
   addVariableButton: document.querySelector("#addVariableButton"),
   variableDefList: document.querySelector("#variableDefList"),
+  commandsCountBadge: document.querySelector("#commandsCountBadge"),
+  variablesCountBadge: document.querySelector("#variablesCountBadge"),
+  aliasesCountBadge: document.querySelector("#aliasesCountBadge"),
   addGlobalAliasButton: document.querySelector("#addGlobalAliasButton"),
   globalAliasList: document.querySelector("#globalAliasList"),
   settingsFields: document.querySelector("#settingsFields"),
@@ -260,6 +262,10 @@ function persistProfiles() {
   };
   localStorage.setItem(storageKey, JSON.stringify(saved));
   window.electronAPI?.writeProfiles(saved).catch(() => {});
+}
+
+function setWindowTitle(name) {
+  window.electronAPI?.setWindowTitle(name);
 }
 
 function activeProfile() {
@@ -443,7 +449,7 @@ function saveActiveProfile({ rerender = true } = {}) {
   if (rerender) {
     renderEditor();
   } else {
-    elements.activeProfileName.textContent = nextProfile.name;
+    setWindowTitle(nextProfile.name);
     renderProfileList();
   }
   const activeT = focusedTab();
@@ -468,7 +474,7 @@ function saveActiveGroup({ rerender = true } = {}) {
   if (rerender) {
     renderEditor();
   } else {
-    elements.activeProfileName.textContent = nextGroup.name;
+    setWindowTitle(nextGroup.name);
     renderGroupList();
   }
 }
@@ -533,11 +539,11 @@ function renderCommandInputs(profile) {
     row.className = "command-row";
     row.innerHTML = `
       <div class="command-index">${index + 1}</div>
-      <textarea data-command-input spellcheck="false"></textarea>
-      <button class="icon-button" type="button" aria-label="Remove command">x</button>
+      <input data-command-input spellcheck="false" autocomplete="off" />
+      <button class="icon-button compact-icon" type="button" aria-label="Remove command">×</button>
     `;
 
-    const input = row.querySelector("textarea");
+    const input = row.querySelector("input");
     input.value = command;
     input.addEventListener("input", saveActiveProfileDebounced);
     row.querySelector("button").addEventListener("click", () => {
@@ -913,7 +919,7 @@ function renderEditor() {
   elements.launchProfileButton.style.display = isSettings ? "none" : "";
 
   if (isSettings) {
-    elements.activeProfileName.textContent = "App Settings";
+    setWindowTitle("App Settings");
     renderGlobalAliasList();
     return;
   }
@@ -929,14 +935,14 @@ function renderEditor() {
       return;
     }
 
-    elements.activeProfileName.textContent = group.name;
+    setWindowTitle(group.name);
     elements.groupNameInput.value = group.name;
     renderGroupMemberInputs(group);
     return;
   }
 
   const profile = activeProfile();
-  elements.activeProfileName.textContent = profile.name;
+  setWindowTitle(profile.name);
   elements.profileNameInput.value = profile.name;
   elements.stopOnErrorInput.checked = profile.stopOnError;
   renderThemeSwatches(profile.theme ?? "ocean");
@@ -956,6 +962,17 @@ function renderEditor() {
   renderCommandInputs(profile);
   renderVariableInputs(profile);
   renderAliasInputs(profile);
+  updateSectionBadges(profile);
+}
+
+function updateSectionBadges(profile) {
+  const cmdCount = profile.commands.filter(Boolean).length;
+  const varCount = (profile.variables ?? []).filter(v => v.name).length;
+  const aliasCount = (profile.aliases ?? []).filter(a => a.name && a.command).length;
+  const set = (el, n) => { if (el) { el.textContent = n > 0 ? n : ""; el.hidden = n === 0; } };
+  set(elements.commandsCountBadge, cmdCount);
+  set(elements.variablesCountBadge, varCount);
+  set(elements.aliasesCountBadge, aliasCount);
 }
 
 function closeTab(id) {

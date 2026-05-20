@@ -33,6 +33,11 @@ ipcMain.handle("window:open", (_event, path) => {
   createWindow(path);
 });
 
+ipcMain.handle("window:setTitle", (_event, title) => {
+  const win = BrowserWindow.fromWebContents(_event.sender);
+  win?.setTitle(title || "Termpad");
+});
+
 let managerWindow = null;
 ipcMain.handle("manager:open", () => {
   if (managerWindow && !managerWindow.isDestroyed()) {

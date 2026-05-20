@@ -49,22 +49,17 @@
       </aside>
 
       <section class="workspace">
-        <header class="topbar">
-          <div>
-            <p id="activeEditorType" class="eyebrow">Profile</p>
-            <h2 id="activeProfileName">Loading...</h2>
-          </div>
-          <div class="topbar-actions">
-            <button id="saveProfileButton" class="ghost-button" type="button">Save</button>
-            <button id="launchProfileButton" class="run-button" type="button">
-              <span aria-hidden="true">▶</span>
-              Launch
-            </button>
-          </div>
-        </header>
-
         <div class="editor-terminal-layout">
           <section id="profileEditor" class="profile-editor" aria-label="Profile editor">
+
+            <div class="editor-profile-actions">
+              <span id="activeEditorType" class="eyebrow" style="flex:1"></span>
+              <button id="saveProfileButton" class="ghost-button compact" type="button">Save</button>
+              <button id="launchProfileButton" class="run-button compact" type="button">
+                <span aria-hidden="true">▶</span> Launch
+              </button>
+            </div>
+
             <div id="profileFields" class="editor-fields">
 
               <div class="editor-section editor-section-general">
@@ -72,19 +67,46 @@
                   Profile name
                   <input id="profileNameInput" autocomplete="off" />
                 </label>
-                <div class="switch-row">
-                  <div>
-                    <strong>Stop on first error</strong>
-                    <span>Keep later commands from running if one fails.</span>
-                  </div>
-                  <label class="switch">
-                    <input id="stopOnErrorInput" type="checkbox" />
-                    <span></span>
-                  </label>
-                </div>
               </div>
 
-              <details class="editor-section" open>
+              <details id="commandsSection" class="editor-section" open>
+                <summary class="editor-section-header">
+                  <span>Commands <span class="section-badge" id="commandsCountBadge"></span></span>
+                  <button id="addCommandButton" class="icon-button compact-icon add-command-btn" type="button" aria-label="Add command">+</button>
+                </summary>
+                <div class="editor-section-body">
+                  <div class="mode-toggle-bar">
+                    <button class="mode-toggle-btn active" data-target="command" data-mode="list" type="button">List</button>
+                    <button class="mode-toggle-btn" data-target="command" data-mode="script" type="button">Script</button>
+                  </div>
+                  <div id="commandListView">
+                    <p class="editor-section-hint">Run top to bottom when this profile launches.</p>
+                    <div id="commandList" class="command-list"></div>
+                  </div>
+                  <div id="scriptView" hidden>
+                    <label>
+                      Script
+                      <textarea id="scriptTextarea" class="theme-yaml-editor script-editor" spellcheck="false" placeholder="#!/bin/bash&#10;cd /home/you/project&#10;npm start"></textarea>
+                    </label>
+                    <div class="script-actions">
+                      <span id="scriptSaveStatus" class="script-save-status"></span>
+                      <button id="saveScriptButton" class="ghost-button compact" type="button">Save script</button>
+                    </div>
+                  </div>
+                  <div class="switch-row">
+                    <div>
+                      <strong>Stop on first error</strong>
+                      <span>Abort the run if any command exits non-zero.</span>
+                    </div>
+                    <label class="switch">
+                      <input id="stopOnErrorInput" type="checkbox" />
+                      <span></span>
+                    </label>
+                  </div>
+                </div>
+              </details>
+
+              <details class="editor-section">
                 <summary class="editor-section-header">
                   <span>Appearance</span>
                 </summary>
@@ -128,6 +150,36 @@
 
               <details class="editor-section">
                 <summary class="editor-section-header">
+                  <span>Variables <span class="section-badge" id="variablesCountBadge"></span></span>
+                  <button id="addVariableButton" class="icon-button compact-icon" type="button" aria-label="Add variable">+</button>
+                </summary>
+                <div class="editor-section-body">
+                  <p class="editor-section-hint">Define <code>{{variables}}</code> used in commands. If a default is set, launch skips the prompt for that variable.</p>
+                  <div class="alias-list-header">
+                    <span>Name</span>
+                    <span>Default value</span>
+                  </div>
+                  <div id="variableDefList" class="alias-list"></div>
+                </div>
+              </details>
+
+              <details class="editor-section">
+                <summary class="editor-section-header">
+                  <span>Aliases <span class="section-badge" id="aliasesCountBadge"></span></span>
+                  <button id="addAliasButton" class="icon-button compact-icon" type="button" aria-label="Add alias">+</button>
+                </summary>
+                <div class="editor-section-body">
+                  <p class="editor-section-hint">Type the alias name directly in the terminal to run it (bash, zsh, and fish only). Use <code>{{variable}}</code> for dynamic values.</p>
+                  <div class="alias-list-header">
+                    <span>Alias</span>
+                    <span>Command</span>
+                  </div>
+                  <div id="aliasList" class="alias-list"></div>
+                </div>
+              </details>
+
+              <details class="editor-section">
+                <summary class="editor-section-header">
                   <span>Logging</span>
                 </summary>
                 <div class="editor-section-body">
@@ -145,63 +197,6 @@
                     Pattern
                     <input id="logPatternInput" placeholder="[%d{HH:mm:ss}] [%-5level] %msg" autocomplete="off" />
                   </label>
-                </div>
-              </details>
-
-              <details class="editor-section" open>
-                <summary class="editor-section-header">
-                  <span>Commands</span>
-                  <button id="addCommandButton" class="icon-button compact-icon" type="button" aria-label="Add command">+</button>
-                </summary>
-                <div class="editor-section-body">
-                  <div class="mode-toggle-bar">
-                    <button class="mode-toggle-btn active" data-target="command" data-mode="list" type="button">List</button>
-                    <button class="mode-toggle-btn" data-target="command" data-mode="script" type="button">Script</button>
-                  </div>
-                  <div id="commandListView">
-                    <p class="editor-section-hint">Run top to bottom when this profile launches.</p>
-                    <div id="commandList" class="command-list"></div>
-                  </div>
-                  <div id="scriptView" hidden>
-                    <label>
-                      Script
-                      <textarea id="scriptTextarea" class="theme-yaml-editor script-editor" spellcheck="false" placeholder="#!/bin/bash&#10;cd /home/you/project&#10;npm start"></textarea>
-                    </label>
-                    <div class="script-actions">
-                      <span id="scriptSaveStatus" class="script-save-status"></span>
-                      <button id="saveScriptButton" class="ghost-button compact" type="button">Save script</button>
-                    </div>
-                  </div>
-                </div>
-              </details>
-
-              <details class="editor-section">
-                <summary class="editor-section-header">
-                  <span>Variables</span>
-                  <button id="addVariableButton" class="icon-button compact-icon" type="button" aria-label="Add variable">+</button>
-                </summary>
-                <div class="editor-section-body">
-                  <p class="editor-section-hint">Define <code>{{variables}}</code> used in commands. If a default is set, launch skips the prompt for that variable.</p>
-                  <div class="alias-list-header">
-                    <span>Name</span>
-                    <span>Default value</span>
-                  </div>
-                  <div id="variableDefList" class="alias-list"></div>
-                </div>
-              </details>
-
-              <details class="editor-section">
-                <summary class="editor-section-header">
-                  <span>Aliases</span>
-                  <button id="addAliasButton" class="icon-button compact-icon" type="button" aria-label="Add alias">+</button>
-                </summary>
-                <div class="editor-section-body">
-                  <p class="editor-section-hint">Type the alias name directly in the terminal to run it (bash, zsh, and fish only). Use <code>{{variable}}</code> for dynamic values.</p>
-                  <div class="alias-list-header">
-                    <span>Alias</span>
-                    <span>Command</span>
-                  </div>
-                  <div id="aliasList" class="alias-list"></div>
                 </div>
               </details>
 
