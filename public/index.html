@@ -271,6 +271,13 @@
               <button id="clearTerminalButton" class="ghost-button compact" type="button">Clear</button>
             </div>
 <div id="terminalOutputWrapper" class="terminal-output-wrapper">
+  <div id="terminalFindBar" class="terminal-find-bar" hidden>
+    <input id="terminalFindInput" class="terminal-find-input" placeholder="Find…" autocomplete="off" spellcheck="false" />
+    <span id="terminalFindCount" class="terminal-find-count"></span>
+    <button id="terminalFindPrev" class="terminal-find-btn" type="button" title="Previous (Shift+Enter)">↑</button>
+    <button id="terminalFindNext" class="terminal-find-btn" type="button" title="Next (Enter)">↓</button>
+    <button id="terminalFindClose" class="terminal-find-close" type="button" aria-label="Close find bar">×</button>
+  </div>
               <div id="terminalOutput" class="terminal-output" aria-label="Terminal"></div>
             </div>
           </section>

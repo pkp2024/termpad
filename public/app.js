@@ -1,5 +1,6 @@
 import { Terminal } from "/vendor/@xterm/xterm/lib/xterm.mjs";
 import { FitAddon } from "/vendor/@xterm/addon-fit/lib/addon-fit.mjs";
+import { SearchAddon } from "/vendor/@xterm/addon-search/lib/addon-search.mjs";
 
 const storageKey = "termpad-profiles";
 
@@ -1064,8 +1065,10 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
     theme: terminalTheme
   });
   const fitAddon = new FitAddon();
+  const searchAddon = new SearchAddon();
   terminal.loadAddon(fitAddon);
   terminal.open(container);
+  terminal.loadAddon(searchAddon);
   attachCopyHandler(terminal);
 
   const tab = {
@@ -1075,6 +1078,7 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
     container,
     terminal,
     fitAddon,
+    searchAddon,
     shellId: null,
     shellStarting: null,
     shellEventSource: null,
@@ -1118,8 +1122,10 @@ function createSplitPane() {
     theme: terminalTheme
   });
   const fitAddon = new FitAddon();
+  const searchAddon = new SearchAddon();
   terminal.loadAddon(fitAddon);
   terminal.open(containerEl);
+  terminal.loadAddon(searchAddon);
   attachCopyHandler(terminal);
 
   const pane = {
@@ -1130,6 +1136,7 @@ function createSplitPane() {
     containerEl,
     terminal,
     fitAddon,
+    searchAddon,
     shellId: null,
     shellStarting: null,
     shellEventSource: null,
@@ -2072,6 +2079,105 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
     document.body.classList.add("mode-manager");
     renderEditor();
   }
+})();
+
+// ── Terminal find bar ──────────────────────────────────────────────────────
+(function () {
+  const findBar   = document.getElementById("terminalFindBar");
+  const findInput = document.getElementById("terminalFindInput");
+  const findCount = document.getElementById("terminalFindCount");
+  const findPrevBtn = document.getElementById("terminalFindPrev");
+  const findNextBtn = document.getElementById("terminalFindNext");
+  const findClose = document.getElementById("terminalFindClose");
+
+  const OPTS = { regex: false, wholeWord: false, caseSensitive: false };
+
+  let currentIndex = 0;
+  let totalCount   = 0;
+
+  function activeAddon()    { return focusedTab()?.searchAddon ?? null; }
+  function activeTerminal() { return focusedTab()?.terminal ?? null; }
+
+  function countMatches(query) {
+    const terminal = activeTerminal();
+    if (!terminal || !query) return 0;
+    const buf = terminal.buffer.active;
+    const q = query.toLowerCase();
+    let count = 0;
+    for (let r = 0; r < buf.length; r++) {
+      const line = buf.getLine(r);
+      if (!line) continue;
+      const text = line.translateToString(true).toLowerCase();
+      let idx = 0;
+      while ((idx = text.indexOf(q, idx)) !== -1) { count++; idx += q.length; }
+    }
+    return count;
+  }
+
+  function updateCount() {
+    const q = findInput.value.trim();
+    if (!q) { findCount.textContent = ""; return; }
+    findCount.textContent = totalCount > 0 ? `${currentIndex} / ${totalCount}` : "No results";
+  }
+
+  function doSearch(direction = "next") {
+    const addon = activeAddon();
+    const query = findInput.value.trim();
+    if (!addon || !query) { findCount.textContent = query ? "No terminal" : ""; return; }
+
+    const found = direction === "next"
+      ? addon.findNext(query, OPTS)
+      : addon.findPrevious(query, OPTS);
+
+    if (found) {
+      if (direction === "next") currentIndex = currentIndex < totalCount ? currentIndex + 1 : 1;
+      else currentIndex = currentIndex > 1 ? currentIndex - 1 : totalCount;
+    }
+    updateCount();
+  }
+
+  function refreshCount() {
+    const q = findInput.value.trim();
+    totalCount   = q ? countMatches(q) : 0;
+    currentIndex = totalCount > 0 ? 1 : 0;
+  }
+
+  function openFindBar() {
+    findBar.hidden = false;
+    findInput.focus();
+    findInput.select();
+  }
+
+  function closeFindBar() {
+    findBar.hidden = true;
+    findInput.value = "";
+    findCount.textContent = "";
+    totalCount = 0; currentIndex = 0;
+    activeAddon()?.clearDecorations?.();
+    activeTerminal()?.focus();
+  }
+
+  findInput.addEventListener("input", () => {
+    refreshCount();
+    const addon = activeAddon();
+    const query = findInput.value.trim();
+    if (!addon || !query) { updateCount(); return; }
+    addon.findNext(query, OPTS);
+    updateCount();
+  });
+
+  findInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter")  { e.preventDefault(); e.shiftKey ? doSearch("prev") : doSearch("next"); }
+    else if (e.key === "Escape") closeFindBar();
+  });
+
+  findNextBtn.addEventListener("click", () => doSearch("next"));
+  findPrevBtn.addEventListener("click", () => doSearch("prev"));
+  findClose.addEventListener("click", closeFindBar);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === "F") { e.preventDefault(); openFindBar(); }
+  });
 })();
 
 // Update banner

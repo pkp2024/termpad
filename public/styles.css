@@ -1077,7 +1077,92 @@ textarea {
   white-space: nowrap;
 }
 
+.terminal-find-bar {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: #1b1e27;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 45%);
+  min-width: 320px;
+}
+
+.terminal-find-bar[hidden] {
+  display: none;
+}
+
+.terminal-find-input {
+  flex: 1;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #141820;
+  color: var(--ink);
+  font-size: 0.84rem;
+  outline: none;
+  min-width: 0;
+}
+
+.terminal-find-input:focus {
+  border-color: rgb(53 208 166 / 70%);
+  box-shadow: 0 0 0 2px rgb(53 208 166 / 12%);
+}
+
+.terminal-find-count {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+
+.terminal-find-btn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #252a36;
+  color: var(--ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 130ms ease, border-color 130ms ease;
+}
+
+.terminal-find-btn:hover {
+  background: #2e3445;
+  border-color: rgb(53 208 166 / 45%);
+}
+
+.terminal-find-close {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: color 130ms ease, background 130ms ease;
+}
+
+.terminal-find-close:hover {
+  color: var(--ink);
+  background: rgb(255 255 255 / 8%);
+}
+
 .terminal-output-wrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
