@@ -116,6 +116,16 @@ termpad --cwd /path/to/project
 
 ## Changelog
 
+### v1.20.0
+
+- **Terminal find bar** — press Ctrl+Shift+F to open a floating search bar over the terminal; supports find next/previous (↓/↑ or Enter/Shift+Enter), shows match count (current / total), and closes with Esc or ×
+- **Redesigned profile manager** — Commands section is now the primary section, promoted to the top with a teal accent border and highlighted header; Stop on first error moved inside the Commands section where it belongs
+- **Section count badges** — Commands, Variables, and Aliases headers display a live count badge showing how many items are defined
+- **Native window title** — the active profile or group name is shown in the OS window title bar instead of consuming UI space
+- **Compact terminal header** — tabs bar and toolbar reduced to slim single-row bars; decorative window-control dots removed
+- **Improved contrast** — borders, surface layers, and muted text are all lighter for better visual depth and readability
+- **Collapsed action bar** — Save and Launch buttons moved into a compact strip at the top of the editor panel; large profile-name heading removed
+
 ### v1.19.0
 
 - **Profile manager in separate window** — clicking ☰ in the terminal toolbar opens the profile manager in its own window; if already open, brings it to the front without interrupting the terminal

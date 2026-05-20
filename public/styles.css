@@ -1,11 +1,11 @@
 :root {
   color-scheme: dark;
-  --bg: #101114;
-  --panel: #181a20;
-  --panel-strong: #20232b;
+  --bg: #0f1117;
+  --panel: #1b1e27;
+  --panel-strong: #222630;
   --ink: #f4f5f7;
-  --muted: #9da6b4;
-  --line: #303641;
+  --muted: #aab4c4;
+  --line: #424d5e;
   --accent: #35d0a6;
   --accent-strong: #18b58f;
   --danger: #ff6961;
@@ -24,7 +24,7 @@ body {
   margin: 0;
   height: 100vh;
   overflow: hidden;
-  background: #101114;
+  background: #0f1117;
   color: var(--ink);
 }
 
@@ -81,7 +81,7 @@ button {
 
 .sidebar {
   border-right: 1px solid var(--line);
-  background: rgb(15 17 21 / 86%);
+  background: rgb(17 20 28 / 90%);
   min-height: 0;
   overflow-y: auto;
   padding: 24px;
@@ -242,7 +242,7 @@ h1 {
 .ghost-button,
 .danger-button,
 .icon-button {
-  background: #22262e;
+  background: #252a36;
   border-color: var(--line);
   padding: 10px 14px;
 }
@@ -317,14 +317,15 @@ button:disabled {
   min-height: 0;
   overflow: hidden;
   padding: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
-.topbar {
+.editor-profile-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 20px;
+  gap: 8px;
+  padding: 10px 14px 6px;
 }
 
 .eyebrow {
@@ -350,7 +351,7 @@ h2 {
   grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
   gap: 18px;
   align-items: stretch;
-  height: calc(100vh - 136px);
+  flex: 1;
   min-height: 0;
 }
 
@@ -408,10 +409,10 @@ h2 {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   color: var(--muted);
 }
 
@@ -430,6 +431,48 @@ details.editor-section:not([open]) > .editor-section-header span::before {
   flex-direction: column;
   gap: 14px;
   padding-top: 14px;
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(53 208 166 / 18%);
+  border: 1px solid rgb(53 208 166 / 35%);
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+#commandsSection {
+  border-left: 2px solid var(--accent);
+  box-shadow: -2px 0 8px rgb(53 208 166 / 25%);
+}
+
+#commandsSection > .editor-section-header > span {
+  color: var(--accent);
+}
+
+#commandsSection > .editor-section-header > span::before {
+  color: var(--accent);
+}
+
+.add-command-btn {
+  border-color: rgb(53 208 166 / 55%) !important;
+  color: var(--accent) !important;
+}
+
+.add-command-btn:hover:not(:disabled) {
+  background: rgb(53 208 166 / 10%) !important;
+  border-color: var(--accent) !important;
 }
 
 .editor-section-hint {
@@ -588,7 +631,7 @@ label {
   min-width: 60px;
   position: relative;
   transition: border-color 140ms ease, background 140ms ease;
-  background: #151820;
+  background: #1a1f2c;
 }
 
 .theme-swatch input {
@@ -626,7 +669,7 @@ label {
 .mode-toggle-bar {
   display: flex;
   gap: 3px;
-  background: #0d0f14;
+  background: #111520;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 3px;
@@ -646,7 +689,7 @@ label {
 }
 
 .mode-toggle-btn.active {
-  background: #1e2430;
+  background: #232940;
   color: var(--ink);
 }
 
@@ -689,7 +732,7 @@ label {
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #101217;
+  background: #141820;
   color: var(--ink);
   outline: none;
   font: inherit;
@@ -706,7 +749,7 @@ textarea {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #101217;
+  background: #141820;
   color: var(--ink);
   outline: none;
 }
@@ -738,7 +781,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
-  background: #151820;
+  background: #1a1f2c;
 }
 
 .switch-row strong {
@@ -810,7 +853,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
-  background: #151820;
+  background: #1a1f2c;
 }
 
 .group-member-info strong {
@@ -840,7 +883,7 @@ textarea {
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #101217;
+  background: #141820;
   color: var(--ink);
   outline: none;
   font: inherit;
@@ -853,9 +896,9 @@ textarea {
 
 .command-row {
   display: grid;
-  grid-template-columns: 28px 1fr 36px;
-  gap: 10px;
-  align-items: start;
+  grid-template-columns: 28px 1fr 28px;
+  gap: 8px;
+  align-items: center;
 }
 
 .command-index {
@@ -923,12 +966,12 @@ textarea {
 
 .terminal-tabs-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px;
   align-items: center;
-  min-height: 42px;
+  min-height: 36px;
   border-bottom: 1px solid #242933;
-  padding: 6px 10px;
+  padding: 3px 8px;
   background: #11141a;
 }
 
@@ -945,9 +988,9 @@ textarea {
   gap: 4px;
   min-width: 100px;
   max-width: 220px;
-  height: 30px;
+  height: 27px;
   border: 1px solid #2b303a;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #191d24;
   color: var(--muted);
   padding: 0 6px 0 10px;
@@ -1000,43 +1043,30 @@ textarea {
 }
 
 .compact-icon {
-  width: 30px;
-  height: 30px;
-  font-size: 1rem;
+  width: 28px;
+  height: 28px;
+  font-size: 0.9rem;
+}
+
+.terminal-toolbar .ghost-button.compact {
+  padding: 4px 9px;
+  font-size: 0.8rem;
+  height: 28px;
 }
 
 .terminal-toolbar {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto auto auto;
-  gap: 12px;
+  grid-template-columns: 1fr auto auto auto auto auto;
+  gap: 8px;
   align-items: center;
-  min-height: 52px;
+  min-height: 36px;
   border-bottom: 1px solid #242933;
-  padding: 10px 14px;
-  background: #151820;
+  padding: 4px 12px;
+  background: #1a1f2c;
 }
 
 .window-controls {
-  display: flex;
-  gap: 7px;
-}
-
-.window-controls span {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.window-controls span:nth-child(1) {
-  background: var(--danger);
-}
-
-.window-controls span:nth-child(2) {
-  background: var(--warning);
-}
-
-.window-controls span:nth-child(3) {
-  background: var(--accent);
+  display: none;
 }
 
 #terminalStatus {
@@ -1047,7 +1077,92 @@ textarea {
   white-space: nowrap;
 }
 
+.terminal-find-bar {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: #1b1e27;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 45%);
+  min-width: 320px;
+}
+
+.terminal-find-bar[hidden] {
+  display: none;
+}
+
+.terminal-find-input {
+  flex: 1;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #141820;
+  color: var(--ink);
+  font-size: 0.84rem;
+  outline: none;
+  min-width: 0;
+}
+
+.terminal-find-input:focus {
+  border-color: rgb(53 208 166 / 70%);
+  box-shadow: 0 0 0 2px rgb(53 208 166 / 12%);
+}
+
+.terminal-find-count {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+
+.terminal-find-btn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #252a36;
+  color: var(--ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 130ms ease, border-color 130ms ease;
+}
+
+.terminal-find-btn:hover {
+  background: #2e3445;
+  border-color: rgb(53 208 166 / 45%);
+}
+
+.terminal-find-close {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: color 130ms ease, background 130ms ease;
+}
+
+.terminal-find-close:hover {
+  color: var(--ink);
+  background: rgb(255 255 255 / 8%);
+}
+
 .terminal-output-wrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1182,7 +1297,7 @@ body.mode-terminal .profile-editor {
   display: none;
 }
 
-body.mode-terminal .topbar-actions {
+body.mode-terminal .editor-profile-actions {
   display: none;
 }
 
@@ -1293,15 +1408,14 @@ body.mode-terminal .editor-terminal-layout {
     padding: 16px;
   }
 
-  .topbar,
-  .topbar-actions,
+  .editor-profile-actions,
   .editor-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
   .command-row {
-    grid-template-columns: 1fr 36px;
+    grid-template-columns: 1fr 28px;
   }
 
   .command-index {
