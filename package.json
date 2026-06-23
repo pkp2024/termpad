@@ -6,7 +6,7 @@
   "main": "desktop/main.js",
   "scripts": {
     "start": "node server.js",
-    "desktop": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "desktop": "env -u ELECTRON_RUN_AS_NODE electron . --no-sandbox",
     "dist": "electron-builder",
     "dist:dir": "electron-builder --dir",
     "postinstall": "node -e \"const f=require('fs'),p=require('path'),d=p.join('node_modules','node-pty','prebuilds');if(f.existsSync(d))for(const s of f.readdirSync(d)){const h=p.join(d,s,'spawn-helper');if(f.existsSync(h))f.chmodSync(h,0o755)}\""
