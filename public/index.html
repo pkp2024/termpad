@@ -257,19 +257,6 @@
               <div id="terminalTabs" class="terminal-tabs" role="tablist" aria-label="Terminal tabs"></div>
               <button id="newTerminalTabButton" class="icon-button compact-icon" type="button" aria-label="New terminal tab">+</button>
             </div>
-            <div class="terminal-toolbar">
-              <div class="window-controls" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <p id="terminalStatus">Ready</p>
-              <button id="cancelSessionButton" class="ghost-button compact" type="button" disabled>Cancel</button>
-              <button id="splitRightButton" class="ghost-button compact" type="button">Split →</button>
-              <button id="splitDownButton" class="ghost-button compact" type="button">Split ↓</button>
-              <button id="restartShellButton" class="ghost-button compact" type="button">Restart shell</button>
-              <button id="clearTerminalButton" class="ghost-button compact" type="button">Clear</button>
-            </div>
 <div id="terminalOutputWrapper" class="terminal-output-wrapper">
   <div id="terminalFindBar" class="terminal-find-bar" hidden>
     <input id="terminalFindInput" class="terminal-find-input" placeholder="Find…" autocomplete="off" spellcheck="false" />
@@ -300,9 +287,10 @@
     </dialog>
 
     <div id="terminalContextMenu" class="terminal-context-menu" hidden>
-      <button data-action="clear">Clear</button>
       <button data-action="split-right">Split Right</button>
       <button data-action="split-down">Split Down</button>
+      <button data-action="restart">Restart shell</button>
+      <button data-action="clear">Clear</button>
       <button data-action="close">Close pane</button>
     </div>
 

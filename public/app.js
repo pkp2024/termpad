@@ -151,7 +151,6 @@ const elements = {
   terminalOutput: document.querySelector("#terminalOutput"),
   terminalOutputWrapper: document.querySelector("#terminalOutputWrapper"),
 
-  terminalStatus: document.querySelector("#terminalStatus"),
   newTerminalTabButton: document.querySelector("#newTerminalTabButton"),
   newProfileButton: document.querySelector("#newProfileButton"),
   newGroupButton: document.querySelector("#newGroupButton"),
@@ -172,11 +171,6 @@ const elements = {
   duplicateProfileButton: document.querySelector("#duplicateProfileButton"),
   deleteProfileButton: document.querySelector("#deleteProfileButton"),
   deleteGroupButton: document.querySelector("#deleteGroupButton"),
-  cancelSessionButton: document.querySelector("#cancelSessionButton"),
-  restartShellButton: document.querySelector("#restartShellButton"),
-  clearTerminalButton: document.querySelector("#clearTerminalButton"),
-  splitRightButton: document.querySelector("#splitRightButton"),
-  splitDownButton: document.querySelector("#splitDownButton"),
   terminalContextMenu: document.querySelector("#terminalContextMenu"),
   variableModal: document.querySelector("#variableModal"),
   variableForm: document.querySelector("#variableForm"),
@@ -184,8 +178,7 @@ const elements = {
   variableCancelButton: document.querySelector("#variableCancelButton")
 };
 
-let fitFrame = 0;
-let lastFitSize = "";
+let fitTimeout = null;
 
 const resizeObserver = new ResizeObserver(() => scheduleFitActiveTerminal());
 resizeObserver.observe(elements.terminalOutputWrapper);
@@ -299,9 +292,6 @@ function setFocusedPane(id) {
   state.splitPanes.forEach(pane => {
     pane.leafEl.classList.toggle("is-focused", pane.id === id);
   });
-  const ft = focusedTab();
-  elements.terminalStatus.textContent = ft?.status || "Ready";
-  elements.cancelSessionButton.disabled = !ft?.profileSessionRunning;
 }
 
 function setActiveProfile(id) {
@@ -832,9 +822,10 @@ function applyProfileAppearance(tab, profile) {
     if (overrides) Object.assign(theme, overrides);
   }
   const f = FONTS[profile.font] ?? FONTS.jetbrains;
+  if (theme.background) tab.container.style.background = theme.background;
   tab.terminal.options.theme = theme;
   tab.terminal.options.fontFamily = f.value;
-  tab.fitAddon.fit();
+  tab.doFit();
   tab.terminal.refresh(0, tab.terminal.rows - 1);
 }
 
@@ -1025,9 +1016,6 @@ function renderTabs() {
     elements.terminalTabs.append(item);
   });
 
-  const ft = focusedTab();
-  elements.terminalStatus.textContent = ft?.status || "Ready";
-  elements.cancelSessionButton.disabled = !ft?.profileSessionRunning;
   scheduleFitActiveTerminal();
 }
 
@@ -1053,6 +1041,7 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
   const id = crypto.randomUUID();
   const container = document.createElement("div");
   container.className = "terminal-instance";
+  container.style.background = terminalTheme.background;
   elements.terminalOutput.append(container);
 
   const terminal = new Terminal({
@@ -1071,6 +1060,29 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
   terminal.loadAddon(searchAddon);
   attachCopyHandler(terminal);
 
+  function doFit() {
+    const core = terminal._core;
+    if (!core || !core._renderService || !core._renderService.dimensions) {
+      fitAddon.fit();
+      terminal.scrollToBottom();
+      return;
+    }
+    const dims = core._renderService.dimensions;
+    const dpr = window.devicePixelRatio || 1;
+    const cellW = dims.css.cell.width;
+    const cellH = dims.device.cell.height / dpr;
+    if (!cellW || !cellH) { fitAddon.fit(); terminal.scrollToBottom(); return; }
+    const rect = container.getBoundingClientRect();
+    const cols = Math.max(2, Math.floor(rect.width / cellW));
+    const rows = Math.max(1, Math.floor(rect.height / cellH));
+    if (terminal.rows !== rows || terminal.cols !== cols) {
+      core._renderService.clear();
+      terminal.resize(cols, rows);
+    }
+    terminal.scrollToBottom();
+    setTimeout(() => terminal.scrollToBottom(), 50);
+  }
+
   const tab = {
     id,
     title,
@@ -1078,6 +1090,7 @@ function createTerminalTab({ title = "Terminal", startShell = true } = {}) {
     container,
     terminal,
     fitAddon,
+    doFit,
     searchAddon,
     shellId: null,
     shellStarting: null,
@@ -1110,6 +1123,7 @@ function createSplitPane() {
 
   const containerEl = document.createElement("div");
   containerEl.className = "terminal-instance active";
+  containerEl.style.background = terminalTheme.background;
   leafEl.append(containerEl);
 
   const terminal = new Terminal({
@@ -1128,6 +1142,29 @@ function createSplitPane() {
   terminal.loadAddon(searchAddon);
   attachCopyHandler(terminal);
 
+    function doFitPane() {
+    const core = terminal._core;
+    if (!core || !core._renderService || !core._renderService.dimensions) {
+      fitAddon.fit();
+      terminal.scrollToBottom();
+      return;
+    }
+    const dims = core._renderService.dimensions;
+    const dpr = window.devicePixelRatio || 1;
+    const cellW = dims.css.cell.width;
+    const cellH = dims.device.cell.height / dpr;
+    if (!cellW || !cellH) { fitAddon.fit(); terminal.scrollToBottom(); return; }
+    const rect = containerEl.getBoundingClientRect();
+    const cols = Math.max(2, Math.floor(rect.width / cellW));
+    const rows = Math.max(1, Math.floor(rect.height / cellH));
+    if (terminal.rows !== rows || terminal.cols !== cols) {
+      core._renderService.clear();
+      terminal.resize(cols, rows);
+    }
+    terminal.scrollToBottom();
+    setTimeout(() => terminal.scrollToBottom(), 50);
+  }
+
   const pane = {
     id: crypto.randomUUID(),
     title: "Split",
@@ -1136,6 +1173,7 @@ function createSplitPane() {
     containerEl,
     terminal,
     fitAddon,
+    doFit: doFitPane,
     searchAddon,
     shellId: null,
     shellStarting: null,
@@ -1241,7 +1279,7 @@ function splitAt(targetId, direction) {
   state.splitPanes.push(pane);
 
   requestAnimationFrame(() => {
-    pane.fitAddon.fit();
+    pane.doFit();
     startInteractiveShell(pane);
     pane.terminal.focus();
     setFocusedPane(pane.id);
@@ -1308,7 +1346,7 @@ function showContextMenu(e, paneId) {
   let x = e.clientX;
   let y = e.clientY;
   if (x + 160 > window.innerWidth) x = window.innerWidth - 168;
-  if (y + 150 > window.innerHeight) y = window.innerHeight - 158;
+  if (y + 200 > window.innerHeight) y = window.innerHeight - 208;
   menu.style.left = `${x}px`;
   menu.style.top = `${y}px`;
   menu.hidden = false;
@@ -1328,6 +1366,12 @@ elements.terminalContextMenu.addEventListener("click", (e) => {
     const tab = id === null ? activeTab() : getPaneById(id);
     tab?.terminal.clear();
     tab?.terminal.focus();
+  } else if (action === "restart") {
+    const tab = id === null ? activeTab() : getPaneById(id);
+    if (tab) {
+      startInteractiveShell(tab, { clear: true });
+      tab.terminal.focus();
+    }
   } else if (action === "split-right") {
     splitAt(id, "right");
   } else if (action === "split-down") {
@@ -1358,25 +1402,29 @@ function saveActiveGroupDebounced() {
   saveTimer = setTimeout(() => saveActiveGroup({ rerender: false }), 350);
 }
 
-function scheduleFitActiveTerminal() {
-  if (fitFrame) return;
-  fitFrame = requestAnimationFrame(() => {
-    fitFrame = 0;
-    const tab = activeTab();
-    if (tab) {
-      const nextFitSize = `${tab.container.clientWidth}x${tab.container.clientHeight}`;
-      if (nextFitSize !== lastFitSize) {
-        lastFitSize = nextFitSize;
-        tab.fitAddon.fit();
-        resizePty(tab);
-      }
-    }
+function fitActiveTerminals() {
+  const tab = activeTab();
+  if (tab) {
+    tab.doFit();
+    resizePty(tab);
+  }
 
-    state.splitPanes.forEach(pane => {
-      pane.fitAddon.fit();
-      resizePty(pane);
-    });
+  state.splitPanes.forEach(pane => {
+    pane.doFit();
+    resizePty(pane);
   });
+}
+
+function scheduleFitActiveTerminal() {
+  // Trailing debounce: maximizing the window fires a burst of resize events as
+  // the layout settles. Reset the timer on each one so the fit runs against the
+  // final dimensions, then re-fit on the next frame to catch any late reflow.
+  if (fitTimeout) clearTimeout(fitTimeout);
+  fitTimeout = setTimeout(() => {
+    fitTimeout = null;
+    fitActiveTerminals();
+    requestAnimationFrame(fitActiveTerminals);
+  }, 50);
 }
 
 async function resizePty(tab) {
@@ -1489,11 +1537,6 @@ async function sendTerminalInput(tab, input) {
 
 function updateTabStatus(tab, status) {
   tab.status = status;
-  const ft = focusedTab();
-  if (ft && tab.id === ft.id) {
-    elements.terminalStatus.textContent = status;
-    elements.cancelSessionButton.disabled = !tab.profileSessionRunning;
-  }
 }
 
 function openInNewWindow(path) {
@@ -1764,7 +1807,7 @@ async function launchGroup(group) {
     const resolvedScript = resolvedScriptList[index];
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        tab.fitAddon.fit();
+        tab.doFit();
         launchProfileInTab(profile, tab, resolved, resolvedScript);
       });
     });
@@ -1994,34 +2037,12 @@ document.querySelector("#toggleManagerButton").addEventListener("click", () => {
   }
 });
 
-elements.clearTerminalButton.addEventListener("click", () => {
-  const tab = focusedTab();
-  tab?.terminal.clear();
-  tab?.terminal.focus();
-});
-
-elements.cancelSessionButton.addEventListener("click", async () => {
-  const tab = focusedTab();
-  if (!tab?.activeSessionId) return;
-  await fetch(`/api/sessions/${tab.activeSessionId}/cancel`, { method: "POST" });
-});
-
-elements.restartShellButton.addEventListener("click", () => {
-  const tab = focusedTab();
-  if (!tab) return;
-  startInteractiveShell(tab, { clear: true });
-  tab.terminal.focus();
-});
-
 elements.terminalOutput.addEventListener("click", () => {
   if (state.splitPanes.length > 0) setFocusedPane(null);
   activeTab()?.terminal.focus();
 });
 
 elements.terminalOutput.addEventListener("contextmenu", (e) => showContextMenu(e, null));
-
-elements.splitRightButton.addEventListener("click", () => splitAt(state.focusedPaneId, "right"));
-elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPaneId, "down"));
 
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
@@ -2043,7 +2064,7 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
     const tab = createTerminalTab({ title: openShellCwd.split("/").filter(Boolean).pop() || "Terminal", startShell: false });
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        tab.fitAddon.fit();
+        tab.doFit();
         startInteractiveShell(tab, { cwd: openShellCwd });
       });
     });
@@ -2068,7 +2089,7 @@ elements.splitDownButton.addEventListener("click", () => splitAt(state.focusedPa
       const tab = createTerminalTab({ title: profile.name, startShell: false });
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          tab.fitAddon.fit();
+          tab.doFit();
           launchProfileInTab(profile, tab);
         });
       });
